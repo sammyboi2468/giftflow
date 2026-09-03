@@ -1,0 +1,109 @@
+datasource db {
+  provider  = "postgresql" // or "sqlite" / "mysql" depending on your Supabase config
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  DEPARTMENT_USER
+  ADVANCEMENT_OFFICE
+  SENATE_DIVISION
+  COUNCIL
+  ADMIN
+}
+
+enum RequestStatus {
+  DRAFT
+  SUBMITTED
+  ADVANCEMENT_REVIEW
+  SENATE_REVIEW
+  SENATE_PROCESSING
+  COUNCIL_REVIEW
+  REVISION_REQUESTED
+  AWAITING_DEPARTMENT_RESPONSE
+  APPROVED
+  REJECTED
+  PENDING
+}
+
+model User { 
+  id                     String        @id @default(cuid())
+  name                   String
+  email                  String        @unique
+  password               String?
+  role                   Role          @default(DEPARTMENT_USER)
+  department             String?
+  giftRequests           GiftRequest[]
+  comments               Comment[]
+  activityLogs           ActivityLog[]
+  mustChangePassword     Boolean       @default(true)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @default(now()) @updatedAt
+}
+
+model GiftRequest {
+  id                    String        @id @default(cuid())
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id])
+  title                 String?
+  donorName             String? // Ensure this exact field exists
+  decisionExtractUrl    String?
+  departmentResponse    String?         @db.Text
+  departmentAttachment  String?
+  giftType              String?
+  department            String?
+  amount                Float?
+  currency              String?        @default("NGN")
+  purpose               String?
+  hasConflictOfInterest Boolean       @default(false)
+  status                RequestStatus @default(SUBMITTED)
+  currentStage          Role      @default(ADVANCEMENT_OFFICE)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  documents    GiftDocument[]
+  activityLogs ActivityLog[]
+  comments           Comment[]
+}
+
+model GiftDocument {
+  id            String      @id @default(cuid())
+  giftRequestId String
+  giftRequest   GiftRequest @relation(fields: [giftRequestId], references: [id], onDelete: Cascade)
+  docType       String
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  createdAt     DateTime    @default(now())
+}
+
+model ActivityLog {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  giftRequestId String?
+  giftRequest   GiftRequest? @relation(fields: [giftRequestId], references: [id], onDelete: SetNull)
+  action        String
+  isRead        Boolean      @default(false)
+  details       String 
+  notes         String?
+  createdAt     DateTime     @default(now())
+}
+model Comment {
+  id            String      @id @default(cuid())
+  content       String      @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Foreign keys
+  giftRequestId String
+  giftRequest   GiftRequest @relation(fields: [giftRequestId], references: [id], onDelete: Cascade)
+
+  authorId      String
+  author        User        @relation(fields: [authorId], references: [id])
+}
+
