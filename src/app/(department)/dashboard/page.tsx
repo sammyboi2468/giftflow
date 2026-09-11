@@ -68,6 +68,11 @@ export default async function DashboardPage() {
   const userDepartment = currentUser?.department;
 
   const isReviewingBody = userRole !== Role.DEPARTMENT_USER;
+  // Advancement Office can now submit gift requests too (donations can
+  // originate from University Central / Advancement itself, not only a
+  // department), so they share the submission-related UI with Department
+  // Users rather than being treated purely as a reviewing body for these.
+  const canSubmit = userRole === Role.DEPARTMENT_USER || userRole === Role.ADVANCEMENT_OFFICE;
 
   const departmentWhereClause = isReviewingBody
     ? {}
@@ -159,7 +164,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         
-        {userRole === Role.DEPARTMENT_USER && (
+        {canSubmit && (
           <Link href="/requestform">
             <button className="z-10 mt-6 md:mt-0 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#5D5CFF] shadow-sm hover:bg-slate-50 transition-all transform active:scale-95 shrink-0">
               <PlusCircle className="h-4 w-4" />
@@ -337,7 +342,7 @@ export default async function DashboardPage() {
                     </span>
 
                     {/* ACTION BUTTON IF REVISION IS NEEDED */}
-                    {isRevision && userRole === Role.DEPARTMENT_USER && (
+                    {isRevision && canSubmit && (
                       <Link
                         href={`/requestform?draftId=${request.id}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-xs"
@@ -348,7 +353,7 @@ export default async function DashboardPage() {
                     )}
 
                     {/* ACTION BUTTON IF DEPARTMENT RESPONSE IS NEEDED */}
-                    {isAwaitingResponse && userRole === Role.DEPARTMENT_USER && (
+                    {isAwaitingResponse && canSubmit && (
                       <Link
                         href={`/reviewer/department/${request.id}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-[#5D5CFF] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#4c4be6] transition-colors shadow-xs"
@@ -396,7 +401,7 @@ export default async function DashboardPage() {
             <h3 className="text-base font-bold text-slate-800 tracking-tight">Quick Actions</h3>
             <div className="bg-white rounded-2xl border border-slate-100 p-3 space-y-1 shadow-sm">
               {[
-                { label: "Submit New Proposal", href: "/requestform", icon: PlusCircle, color: "text-[#5D5CFF] bg-[#5D5CFF]/5", visible: userRole === Role.DEPARTMENT_USER },
+                { label: "Submit New Proposal", href: "/requestform", icon: PlusCircle, color: "text-[#5D5CFF] bg-[#5D5CFF]/5", visible: canSubmit },
                 { label: "Track System Folders", href: "/dashboard", icon: FileText, color: "text-blue-500 bg-blue-50", visible: true }
               ].filter(a => a.visible).map((action, index) => {
                 const ActionIcon = action.icon;

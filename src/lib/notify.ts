@@ -9,12 +9,13 @@ async function getUserIdsByRole(role: Role): Promise<string[]> {
   const users = await db.user.findMany({ where: { role }, select: { id: true } });
   return users.map((u) => u.id);
 }
-
 export async function notifyDecisionExtractIssued({
   requestId,
   title,
+  applicantEmail,
   applicantUserId,
   issuedByStage,
+  extractUrl,
 }: {
   requestId: string;
   title: string;
@@ -22,7 +23,8 @@ export async function notifyDecisionExtractIssued({
   applicantUserId: string;
   issuedByStage: string;
   extractUrl: string;
-}) {
+})
+ {
   const issuer = issuedByStage === "senate" ? "Senate" : issuedByStage;
   const advancementIds = await getUserIdsByRole(Role.ADVANCEMENT_OFFICE);
 

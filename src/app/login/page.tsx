@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
@@ -149,9 +149,7 @@ export default function LoginPage() {
         />
 
         <div className="relative z-10 w-full max-w-md space-y-6">
-          <div
-            className="login-pop mb-6 flex items-center gap-2 lg:hidden"
-          >
+          <div className="login-pop mb-6 flex items-center gap-2 lg:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5D5CFF] text-white">
               <Gift className="h-5 w-5" />
             </div>
@@ -427,5 +425,13 @@ export default function LoginPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-sm text-gray-500">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

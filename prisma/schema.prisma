@@ -10,6 +10,8 @@ generator client {
 
 enum Role {
   DEPARTMENT_USER
+  FACULTY_USER
+  CENTRAL_USER
   ADVANCEMENT_OFFICE
   SENATE_DIVISION
   COUNCIL
@@ -37,6 +39,8 @@ model User {
   password               String?
   role                   Role          @default(DEPARTMENT_USER)
   department             String?
+  faculty                String?
+  office                 String?
   giftRequests           GiftRequest[]
   comments               Comment[]
   activityLogs           ActivityLog[]
@@ -52,6 +56,7 @@ model GiftRequest {
   title                 String?
   donorName             String? // Ensure this exact field exists
   decisionExtractUrl    String?
+  appreciationLetterUrl String?
   departmentResponse    String?         @db.Text
   departmentAttachment  String?
   giftType              String?

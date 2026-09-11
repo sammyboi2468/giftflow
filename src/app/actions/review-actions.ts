@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { RequestStatus, Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { notifyDecisionExtractIssued, notifyFinalApproval } from "@/lib/notify";
+import { generateAppreciationLetter } from "@/lib/generateAppreciationLetter";
 
 interface ProcessReviewInput {
   applicationId: string;
@@ -44,43 +45,30 @@ export async function processApplicationReview({
       return { success: false, error: "Application not found" };
     }
 
-    const normalizedStage = stage.toLowerCase();
-    const isSenateProcessing = normalizedStage === "senate-processing";
-
-    // 🔒 Bypass/Strip decisionExtractUrl if we are in senate-processing stage
-    const extractUrlToSave = isSenateProcessing ? undefined : decisionExtractUrl;
-
     let targetStatus: RequestStatus = nextStatus;
 
     if (decision === "REJECT") {
       targetStatus = RequestStatus.REJECTED;
-    } else if (decision === "REQUEST_INFO") {
+    } else if (decision === "REQUEST_INFO" && !decisionExtractUrl) {
       targetStatus = RequestStatus.REVISION_REQUESTED;
     }
 
+    const normalizedStage = stage.toLowerCase();
     const issuingRole = STAGE_TO_ROLE[normalizedStage];
 
     await db.$transaction(async (tx) => {
-      // 1. Update Gift Request status and stage
       await tx.giftRequest.update({
         where: { id: applicationId },
         data: {
           status: targetStatus,
-          ...(extractUrlToSave && { decisionExtractUrl: extractUrlToSave }),
+          ...(decisionExtractUrl && { decisionExtractUrl }),
           ...(issuingRole && { currentStage: issuingRole }),
         },
       });
 
-      // 2. Audit Trail Comment
       let auditMsg = comment || `Status updated to ${targetStatus}`;
-
-      if (extractUrlToSave) {
-        // Only initial Senate review issues a Decision Extract.
-        auditMsg = `Senate issued Decision Extract: ${extractUrlToSave}. Awaiting department response.`;
-      } else if (isSenateProcessing && targetStatus === RequestStatus.COUNCIL_REVIEW) {
-        auditMsg = comment 
-          ? `Senate completed consideration on department response: ${comment}. Forwarded to Council.` 
-          : `Senate completed consideration on department response. Forwarded to Council for final approval.`;
+      if (decisionExtractUrl) {
+        auditMsg = `Senate issued Decision Extract: ${decisionExtractUrl}. Awaiting department response.`;
       } else if (targetStatus === RequestStatus.COUNCIL_REVIEW) {
         auditMsg = `Forwarded to Council for final approval.`;
       } else if (targetStatus === RequestStatus.APPROVED) {
@@ -96,23 +84,41 @@ export async function processApplicationReview({
       });
     });
 
-    // 3. Notify on Decision Extract issued (Initial Senate review only)
-    if (extractUrlToSave) {
+    if (decisionExtractUrl) {
       await notifyDecisionExtractIssued({
         requestId: applicationId,
         title: application.title ?? "Untitled application",
         applicantEmail: application.user.email,
+        applicantUserId: application.userId,
         issuedByStage: normalizedStage,
-        extractUrl: extractUrlToSave,
+        extractUrl: decisionExtractUrl,
       });
     }
 
-    // 4. Notify on Final Approval (Council approval path)
     if (targetStatus === RequestStatus.APPROVED) {
+      // Immediately generate a formal appreciation letter PDF and store its
+      // URL on the request. Emailing it to the donor is a follow-up step
+      // once donor email addresses / email sending are set up.
+      const letterUrl = await generateAppreciationLetter({
+        requestId: applicationId,
+        donorName: application.donorName || "Valued Donor",
+        giftTitle: application.title || "your generous gift",
+        giftType: application.giftType,
+        amount: application.amount,
+        currency: application.currency,
+        purpose: application.purpose,
+        department: application.department,
+      });
+
+      await db.giftRequest.update({
+        where: { id: applicationId },
+        data: { appreciationLetterUrl: letterUrl },
+      });
+
       await notifyFinalApproval({
         requestId: applicationId,
         title: application.title ?? "Untitled application",
-        applicantEmail: application.user.email,
+        applicantUserId: application.userId,
         extractUrl: application.decisionExtractUrl,
       });
     }

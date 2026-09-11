@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-import { DevRoleSwitcher } from "../components/roleSwitcher/page";
 import AuthProvider from "../components/providers/AuthProvider";
 import { Toaster } from "sonner";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "GiftFlow",
@@ -28,21 +18,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
     >
-      
       <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}
+        <AuthProvider>
+          {children}
           <Toaster
-          position="top-center"
-          expand={false}
-          richColors
-          closeButton
-          toastOptions={{
-            duration: 4000,
-            className: "font-sans text-xs font-semibold rounded-xl shadow-lg border",
-          }}
-        />
+            position="top-center"
+            expand={false}
+            richColors
+            closeButton
+            toastOptions={{
+              duration: 4000,
+              className: "font-sans text-xs font-semibold rounded-xl shadow-lg border",
+            }}
+          />
         </AuthProvider>
       </body>
     </html>

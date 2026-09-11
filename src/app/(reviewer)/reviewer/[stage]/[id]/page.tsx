@@ -201,6 +201,23 @@ export default async function ApplicationDetailPage({
             </div>
           )}
 
+          {application.appreciationLetterUrl && (
+            <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-xl flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 text-emerald-950 font-medium">
+                <FileText className="h-4 w-4 text-emerald-600" />
+                <span>Appreciation Letter Generated</span>
+              </div>
+              <a
+                href={application.appreciationLetterUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
+              >
+                <Download className="h-3 w-3" /> View Letter
+              </a>
+            </div>
+          )}
+
           {(application.departmentResponse || application.departmentAttachment) && (
             <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-2 text-xs">
               <h4 className="font-bold text-emerald-950">Department Response</h4>
@@ -220,6 +237,36 @@ export default async function ApplicationDetailPage({
               )}
             </div>
           )}
+
+          {/* Full Request History -- every status change, decision extract
+              issuance, and department response, in order. Senate in
+              particular needs this to see whether/when a request was
+              previously sent back for revision. */}
+          <div className="pt-2">
+            <h3 className="text-xs font-bold text-slate-900 mb-2">Full Request History</h3>
+            {application.comments && application.comments.length > 0 ? (
+              <div className="space-y-2">
+                {application.comments.map((c) => (
+                  <div
+                    key={c.id}
+                    className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1"
+                  >
+                    <div className="flex items-center justify-between font-semibold text-slate-800">
+                      <span>{c.author?.name || "System"}</span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed">{c.content}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-100">
+                No history recorded for this request yet.
+              </p>
+            )}
+          </div>
         </div>
 
         <ReviewActionForm

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { Role } from '@prisma/client';
 import {
   Gift,
   Save,
@@ -60,6 +61,12 @@ const DOC_TYPE_TO_FILE_KEY: Record<string, keyof FileUploadState> = {
   PAYMENT_RECEIPT: 'file_paymentReceipt',
   file_paymentReceipt: 'file_paymentReceipt',
 };
+
+// Presets offered to submitters who can choose their own source (Advancement
+// Office / Admin), rather than being locked to their login session's
+// department -- since donations can originate somewhere other than a
+// traditional academic department.
+const DEPARTMENT_PRESETS = ['University Central', 'Advancement Office'];
 
 interface GiftDocument {
   docType: string;
@@ -124,6 +131,12 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
 
   const { data: session } = useSession();
   const sessionDepartment = session?.user?.department ?? '';
+  const userRole = session?.user?.role as Role | undefined;
+  // Department users stay locked to their session's department, as before.
+  // Advancement Office / Admin can submit on behalf of a non-department
+  // source (University Central, Advancement Office itself, a donor-specified
+  // origin, etc.), so they get a free-text field instead.
+  const canEditDepartment = userRole === Role.ADVANCEMENT_OFFICE || userRole === Role.ADMIN;
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,6 +160,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
     title: '',
     donorName: '',
     giftType: 'Prize',
+    department: '',
     amount: '',
     currency: 'NGN',
     purpose: '',
@@ -164,14 +178,24 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
 
   const [existingFileNames, setExistingFileNames] = useState<{ [key in keyof FileUploadState]?: string }>({});
   const [existingDocuments, setExistingDocuments] = useState<GiftDocument[]>([]);
-  const [draftDepartment, setDraftDepartment] = useState<string | null>(null);
 
-  const department = draftDepartment ?? sessionDepartment;
+  // For a brand-new (non-draft) submission by a locked department user,
+  // seed the field from their session once it's available. Advancement
+  // Office / Admin choose their own source, so this never overrides them.
+  // An existing draft's own saved department (loaded below) always wins.
+useEffect(() => {
+    if (activeId) return;
+    if (canEditDepartment) return;
+    if (!sessionDepartment) return;
+
+    queueMicrotask(() => {
+      setFormData((prev) => (prev.department ? prev : { ...prev, department: sessionDepartment }));
+    });
+  }, [activeId, canEditDepartment, sessionDepartment]);
 
   useEffect(() => {
     const currentId = activeId;
     if (!currentId) return;
-
     async function loadExistingDraft() {
       setIsLoadingDraft(true);
       try {
@@ -186,15 +210,13 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
             title: data.title || '',
             donorName: data.donorName || '',
             giftType: data.giftType || 'Prize',
+            department: data.department || '',
             amount: data.amount ? String(data.amount) : '',
             currency: data.currency || 'NGN',
             purpose: data.purpose || '',
             hasConflict: String(data.hasConflictOfInterest ?? 'false'),
             ethicalClearance: false,
           });
-          if (data.department) {
-            setDraftDepartment(data.department);
-          }
           updateDraftId(currentId!);
 
           const loadedAttachments: { [key in keyof FileUploadState]?: string } = {};
@@ -249,8 +271,6 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
     Object.entries(formData).forEach(([key, val]) => {
       payload.append(key, String(val));
     });
-
-    payload.append('department', department);
 
     return payload;
   };
@@ -514,19 +534,59 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     <option value="Equipment">Equipment</option>
                   </select>
                 </div>
+
+                {/* Department / Source */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Department</label>
-                  <input
-                    type="text"
-                    name="department"
-                    value={department}
-                    readOnly
-                    disabled
-                    className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-500"
-                  />
-                  <p className="mt-1 text-xs text-gray-400">
-                    Set from your login session and cannot be edited here.
-                  </p>
+                  <label className="block text-sm font-medium text-gray-700">
+                    {canEditDepartment ? 'Department / Source' : 'Department'}
+                  </label>
+
+                  {canEditDepartment ? (
+                    <>
+                      <input
+                        type="text"
+                        name="department"
+                        value={formData.department}
+                        onChange={handleChange}
+                        placeholder="e.g., University Central, Advancement Office, or a specific department"
+                        className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        required
+                      />
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {DEPARTMENT_PRESETS.map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setFormData((prev) => ({ ...prev, department: preset }))}
+                            className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                              formData.department === preset
+                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                : 'border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-1 text-xs text-gray-400">
+                        Specify where this gift is coming from -- it doesn`t have to be a department.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        name="department"
+                        value={formData.department}
+                        readOnly
+                        disabled
+                        className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-500"
+                      />
+                      <p className="mt-1 text-xs text-gray-400">
+                        Set from your login session and cannot be edited here.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -650,8 +710,8 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     <span>{formData.donorName || 'N/A'}</span>
                   </p>
                   <p>
-                    <span className="font-semibold text-gray-700">Department:</span>{' '}
-                    <span>{department || 'N/A'}</span>
+                    <span className="font-semibold text-gray-700">Department / Source:</span>{' '}
+                    <span>{formData.department || 'N/A'}</span>
                   </p>
                   <p>
                     <span className="font-semibold text-gray-700">Amount:</span>{' '}
