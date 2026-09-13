@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RequestStatus } from "@prisma/client";
 import { processApplicationReview } from "@/app/actions/review-actions";
 import { AlertCircle, CheckCircle, XCircle, MessageSquare } from "lucide-react";
 
@@ -24,33 +25,53 @@ export default function ReviewModal({
 
   if (!isOpen) return null;
 
+  const normalizedStage = currentStage.toLowerCase();
+  // Senate approvals require an official Decision Extract to be uploaded
+  // (see ReviewActionForm). This quick modal has no file upload, so it
+  // can't fulfill that requirement -- block approval here rather than
+  // silently writing an incomplete/invalid approval.
+  const blocksApproveHere = normalizedStage === "senate";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Enforce mandatory comment on rejection
     if (decision === "REJECT" && !comment.trim()) {
       setError("Please provide a reason for rejecting this application.");
       return;
     }
 
+    if (decision === "APPROVE" && blocksApproveHere) {
+      setError(
+        "Senate approvals require uploading an official Decision Extract. Please use the full review page for this stage instead."
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
-    // Map next status state based on current stage and decision
-    let nextStatus = "CLOSED_APPROVED";
+    // Map next status based on current stage and decision, using real
+    // RequestStatus enum values (matching STAGE_NEXT_STATUS_MAP elsewhere
+    // in the app, not the invented strings this used to have).
+    let nextStatus: RequestStatus = RequestStatus.APPROVED;
     if (decision === "REJECT") {
-      nextStatus = "CLOSED_REJECTED";
-    } else if (currentStage === "advancement") {
-      nextStatus = "PROCESSING_BY_SENATE_DIVISION";
-    } else if (currentStage === "senate") {
-      nextStatus = "UNDER_COUNCIL_REVIEW";
+      nextStatus = RequestStatus.REJECTED;
+    } else if (normalizedStage === "advancement") {
+      nextStatus = RequestStatus.SENATE_REVIEW;
+    } else if (normalizedStage === "senate") {
+      nextStatus = RequestStatus.AWAITING_DEPARTMENT_RESPONSE;
+    } else if (normalizedStage === "senate-processing") {
+      nextStatus = RequestStatus.COUNCIL_REVIEW;
     }
+    // "council" (and anything else) falls through to APPROVED, matching
+    // the real flow where Council is the final stage.
 
     const res = await processApplicationReview({
       applicationId,
       decision,
       comment,
       nextStatus,
+      stage: currentStage,
     });
 
     setIsSubmitting(false);
@@ -65,7 +86,7 @@ export default function ReviewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 space-y-5">
-        
+
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2">
@@ -93,6 +114,16 @@ export default function ReviewModal({
           </div>
         )}
 
+        {blocksApproveHere && !error && (
+          <div className="flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs font-medium text-amber-700">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>
+              Approving at the Senate stage requires an official Decision Extract. Use the full review page to
+              approve -- you can still reject here.
+            </span>
+          </div>
+        )}
+
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -103,7 +134,8 @@ export default function ReviewModal({
               <button
                 type="button"
                 onClick={() => setDecision("APPROVE")}
-                className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all ${
+                disabled={blocksApproveHere}
+                className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
                   decision === "APPROVE"
                     ? "border-emerald-500 bg-emerald-50/50 text-emerald-700 ring-1 ring-emerald-500"
                     : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -156,7 +188,7 @@ export default function ReviewModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || (decision === "APPROVE" && blocksApproveHere)}
               className={`rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all ${
                 decision === "REJECT"
                   ? "bg-rose-600 hover:bg-rose-700"

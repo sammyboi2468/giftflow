@@ -1,7 +1,8 @@
 "use server";
 
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { UTApi } from "uploadthing/server";
+
+const utapi = new UTApi();
 
 export async function uploadExtractFile(formData: FormData): Promise<{
   success: boolean;
@@ -16,25 +17,15 @@ export async function uploadExtractFile(formData: FormData): Promise<{
       return { success: false, error: "No valid file selected." };
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const result = await utapi.uploadFiles(file);
 
-    // Save destination: public/uploads inside project directory
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    // Generate unique, sanitized filename
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filename = `${uniqueSuffix}-${sanitizedName}`;
-    const filePath = path.join(uploadDir, filename);
-
-    // Write file to disk
-    await writeFile(filePath, buffer);
+    if (result.error) {
+      return { success: false, error: `File upload failed: ${result.error.message}` };
+    }
 
     return {
       success: true,
-      url: `/uploads/${filename}`,
+      url: result.data.url,
       originalName: file.name,
     };
   } catch (err: unknown) {

@@ -50,11 +50,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // 1. Initial login: attach user properties to JWT token
+      // 1. Initial login: attach user properties to JWT token.
+      // Explicit casts here because Auth.js v5's callback typing for `user`
+      // doesn't fully pick up the module augmentation in
+      // src/types/next-auth.d.ts the way `token`/JWT does -- these values
+      // are correct at runtime (they come straight from Prisma), this is
+      // purely reconciling the callback's own type resolution.
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-        token.department = user.department;
+        token.role = user.role as Role;
+        token.department = (user.department ?? undefined) as string | undefined;
         token.mustChangePassword = user.mustChangePassword;
       }
 
@@ -69,7 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = (token.role as Role) ?? Role.DEPARTMENT_USER;
-        session.user.department = token.department as string | null;
+        session.user.department = ((token.department as string | undefined) ?? undefined) as string | undefined;
         session.user.mustChangePassword = (token.mustChangePassword as boolean) ?? false;
       }
       return session;

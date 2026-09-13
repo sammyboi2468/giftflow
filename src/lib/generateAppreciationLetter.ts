@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, PDFFont } from "pdf-lib";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { UTApi } from "uploadthing/server";
+
+const utapi = new UTApi();
 
 // Edit this to your actual institution name/letterhead text.
 const INSTITUTION_NAME = "Giftflow University";
@@ -117,12 +118,13 @@ export async function generateAppreciationLetter(input: LetterInput): Promise<st
 
   const pdfBytes = await doc.save();
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "letters");
-  await mkdir(uploadDir, { recursive: true });
-
   const fileName = `appreciation-letter-${requestId}-${Date.now()}.pdf`;
-  const filePath = path.join(uploadDir, fileName);
-  await writeFile(filePath, pdfBytes);
+  const pdfFile = new File([Buffer.from(pdfBytes)], fileName, { type: "application/pdf" });
 
-  return `/uploads/letters/${fileName}`;
+  const result = await utapi.uploadFiles(pdfFile);
+  if (result.error) {
+    throw new Error(`Failed to upload appreciation letter: ${result.error.message}`);
+  }
+
+  return result.data.url;
 }
