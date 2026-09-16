@@ -332,7 +332,7 @@ export default function MyRequestsPage() {
                       : '—';
 
                     const actionHref = isDraft
-                      ? `/request-form?draftId=${row.id}`
+                      ? `/requestform?draftId=${row.id}`
                       : `/requests/${row.id}`;
 
                     return (

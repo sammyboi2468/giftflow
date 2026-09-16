@@ -74,7 +74,7 @@ export default async function DraftsPage() {
               </div>
 
               <Link
-                href={`/request-form?draftId=${draft.id}`}
+                href={`/requestform?draftId=${draft.id}`}
                 className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-colors"
               >
                 Continue Proposal
