@@ -179,23 +179,18 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
   const [existingFileNames, setExistingFileNames] = useState<{ [key in keyof FileUploadState]?: string }>({});
   const [existingDocuments, setExistingDocuments] = useState<GiftDocument[]>([]);
 
-  // For a brand-new (non-draft) submission by a locked department user,
-  // seed the field from their session once it's available. Advancement
-  // Office / Admin choose their own source, so this never overrides them.
-  // An existing draft's own saved department (loaded below) always wins.
-useEffect(() => {
-    if (activeId) return;
-    if (canEditDepartment) return;
-    if (!sessionDepartment) return;
-
-    queueMicrotask(() => {
-      setFormData((prev) => (prev.department ? prev : { ...prev, department: sessionDepartment }));
-    });
-  }, [activeId, canEditDepartment, sessionDepartment]);
+  // For a locked (non-editable) department user, the field is never
+  // actually typed into -- it's always either their own saved/loaded
+  // value, or their session's department as a fallback. Computed directly
+  // during render rather than synced via an effect, since nothing here
+  // depends on subscribing to an external system; it's derivable from
+  // values already available on every render.
+  const effectiveDepartment = canEditDepartment ? formData.department : formData.department || sessionDepartment;
 
   useEffect(() => {
     const currentId = activeId;
     if (!currentId) return;
+
     async function loadExistingDraft() {
       setIsLoadingDraft(true);
       try {
@@ -269,8 +264,11 @@ useEffect(() => {
     }
 
     Object.entries(formData).forEach(([key, val]) => {
+      if (key === 'department') return; // sent separately below, resolved
       payload.append(key, String(val));
     });
+
+    payload.append('department', effectiveDepartment);
 
     return payload;
   };
@@ -577,7 +575,7 @@ useEffect(() => {
                       <input
                         type="text"
                         name="department"
-                        value={formData.department}
+                        value={effectiveDepartment}
                         readOnly
                         disabled
                         className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-500"
@@ -711,7 +709,7 @@ useEffect(() => {
                   </p>
                   <p>
                     <span className="font-semibold text-gray-700">Department / Source:</span>{' '}
-                    <span>{formData.department || 'N/A'}</span>
+                    <span>{effectiveDepartment || 'N/A'}</span>
                   </p>
                   <p>
                     <span className="font-semibold text-gray-700">Amount:</span>{' '}

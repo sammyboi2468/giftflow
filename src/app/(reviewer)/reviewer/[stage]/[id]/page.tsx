@@ -14,6 +14,7 @@ import {
   Download,
   DollarSign,
   Gift,
+  History,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -238,12 +239,12 @@ export default async function ApplicationDetailPage({
             </div>
           )}
 
-          {/* Full Request History -- every status change, decision extract
-              issuance, and department response, in order. Senate in
-              particular needs this to see whether/when a request was
-              previously sent back for revision. */}
+          {/* Full Request History */}
           <div className="pt-2">
-            <h3 className="text-xs font-bold text-slate-900 mb-2">Full Request History</h3>
+            <h3 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-2">
+              <History className="h-4 w-4 text-[#5D5CFF]" />
+              Full Request History
+            </h3>
             {application.comments && application.comments.length > 0 ? (
               <div className="space-y-2">
                 {application.comments.map((c) => (
@@ -272,6 +273,7 @@ export default async function ApplicationDetailPage({
         <ReviewActionForm
           applicationId={application.id}
           nextStatus={nextStatus}
+          documents={application.documents}
         />
       </div>
     </div>

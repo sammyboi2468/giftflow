@@ -1,15 +1,26 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
 import { db as prisma } from '@/lib/db';
 import { RequestStatus } from '@prisma/client';
 
-export default async function DraftsPage() {
-  const userId = 'usr_101'; // Ensure this matches your logged-in/seeded user ID
+// Without this, Next.js has no signal that this page depends on
+// request-specific data (it reads no cookies/headers/searchParams itself),
+// so it's eligible to be statically pre-rendered at build time -- meaning
+// production could serve a frozen snapshot that never reflects new drafts
+// or submissions until the next deploy. Forcing dynamic rendering ensures
+// every visit re-queries the database.
+export const dynamic = 'force-dynamic';
 
-  // Fetch draft proposals
+export default async function DraftsPage() {
+  const session = await auth();
+  if (!session?.user) redirect('/login');
+
+  // Fetch draft proposals belonging to the current user only.
   const drafts = await prisma.giftRequest.findMany({
     where: {
-      
-      status: RequestStatus.DRAFT, // 👈 Ensures we only grab DRAFT status
+      userId: session.user.id,
+      status: RequestStatus.DRAFT,
     },
     include: {
       documents: true,

@@ -3,7 +3,7 @@
 import { db } from "@/lib/db";
 import { RequestStatus, Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
-import { notifyDecisionExtractIssued, notifyFinalApproval } from "@/lib/notify";
+import { notifyDecisionExtractIssued, notifyFinalApproval, notifyStatusChange } from "@/lib/notify";
 import { generateAppreciationLetter } from "@/lib/generateAppreciationLetter";
 
 interface ProcessReviewInput {
@@ -82,6 +82,24 @@ export async function processApplicationReview({
           author: { connect: { id: session.user.id } },
         },
       });
+
+      // Permanent record of "this stage acted on this request" -- unlike
+      // status/currentStage (which get overwritten as the request moves
+      // forward), this row is never touched again once written, so a
+      // stage's full history remains queryable even after a request has
+      // long since moved past it.
+      if (issuingRole) {
+        await tx.stageHistory.create({
+          data: {
+            giftRequestId: applicationId,
+            stage: issuingRole,
+            action: decision,
+            resultingStatus: targetStatus,
+            actedByUserId: session.user.id,
+            notes: comment || null,
+          },
+        });
+      }
     });
 
     if (decisionExtractUrl) {
@@ -92,6 +110,15 @@ export async function processApplicationReview({
         applicantUserId: application.userId,
         issuedByStage: normalizedStage,
         extractUrl: decisionExtractUrl,
+      });
+    } else if (targetStatus !== RequestStatus.APPROVED) {
+      // Every other transition (forward progress, rejection, revision
+      // request) that isn't already covered by a specific notifier above.
+      await notifyStatusChange({
+        requestId: applicationId,
+        title: application.title ?? "Untitled application",
+        applicantUserId: application.userId,
+        newStatus: targetStatus,
       });
     }
 

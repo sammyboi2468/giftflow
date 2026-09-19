@@ -1,68 +1,60 @@
-import { PrismaClient, Role, RequestStatus } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+async function upsertUser(params: {
+  name: string;
+  email: string;
+  tempPassword: string;
+  role: Role;
+  department?: string;
+}) {
+  const hashed = await bcrypt.hash(params.tempPassword, 10);
+  const user = await prisma.user.upsert({
+    where: { email: params.email },
+    update: {},
+    create: {
+      name: params.name,
+      email: params.email,
+      password: hashed,
+      role: params.role,
+      department: params.department,
+      mustChangePassword: true, // forces the password-change flow on first login
+    },
+  });
+  console.log(`✓ ${params.role} -- ${user.email} (temp password: ${params.tempPassword})`);
+}
+
 async function main() {
-  console.log("Seeding pre-provisioned user accounts...");
-  const tempPassword = await bcrypt.hash("TempPass123!", 10);
-
-  // 1. Seed Applicant User
-  const applicant = await prisma.user.upsert({
-    where: { email: "jenkins.cs@university.edu" },
-    update: { password: tempPassword, mustChangePassword: true },
-    create: {
-      name: "Dr. Sarah Jenkins",
-      email: "jenkins.cs@university.edu",
-      password: tempPassword,
-      mustChangePassword: true,
-      role: Role.DEPARTMENT_USER,
-      department: "Computer Science",
-    },
+  // Edit these before running -- especially the admin email/password.
+  await upsertUser({
+    name: "System Administrator",
+    email: "admin@yourdomain.com",
+    tempPassword: "ChangeMe123!",
+    role: Role.ADMIN,
   });
 
-  // 2. Seed Advancement Reviewer User
-  await prisma.user.upsert({
-    where: { email: "advancement@university.edu" },
-    update: { password: tempPassword, mustChangePassword: true },
-    create: {
-      name: "Prof. Arthur Pendelton",
-      email: "advancement@university.edu",
-      password: tempPassword,
-      mustChangePassword: true,
-      role: Role.ADVANCEMENT_OFFICE,
-      department: "Advancement Office",
-    },
+  await upsertUser({
+    name: "Advancement Office",
+    email: "advancement@yourdomain.com",
+    tempPassword: "ChangeMe123!",
+    role: Role.ADVANCEMENT_OFFICE,
   });
 
-  await prisma.user.upsert({
-    where: { email: "senate@university.edu" },
-    update: { password: tempPassword, mustChangePassword: true },
-    create: {
-      name: "Prof. Damilola Samson",
-      email: "senate@university.edu",
-      password: tempPassword,
-      mustChangePassword: true,
-      role: Role.SENATE_DIVISION,
-      department: "Senate division",
-    },
+  await upsertUser({
+    name: "Senate Division",
+    email: "senate@yourdomain.com",
+    tempPassword: "ChangeMe123!",
+    role: Role.SENATE_DIVISION,
   });
 
-  await prisma.user.upsert({
-    where: { email: "council@university.edu" },
-    update: { password: tempPassword, mustChangePassword: true },
-    create: {
-      name: "Prof. Joshua Salami",
-      email: "council@university.edu",
-      password: tempPassword,
-      mustChangePassword: true,
-      role: Role.COUNCIL,
-      department: "Council",
-    },
+  await upsertUser({
+    name: "University Council",
+    email: "council@yourdomain.com",
+    tempPassword: "ChangeMe123!",
+    role: Role.COUNCIL,
   });
-
-  console.log("Database seeded successfully!");
-  console.log("Temporary password for accounts: TempPass123!");
 }
 
 main()

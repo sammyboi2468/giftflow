@@ -4,7 +4,7 @@ import { UTApi } from "uploadthing/server";
 const utapi = new UTApi();
 
 // Edit this to your actual institution name/letterhead text.
-const INSTITUTION_NAME = "Giftflow University";
+const INSTITUTION_NAME = "OBAFEMI AWOLOWO UNIVERSITY";
 
 interface LetterInput {
   requestId: string;

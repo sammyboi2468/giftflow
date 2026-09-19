@@ -17,6 +17,7 @@ import {
   Edit3,
   Paperclip
 } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 
 const statusMap: Record<RequestStatus, { step: number; location: string }> = {
   DRAFT: { step: 0, location: "Drafts" },
@@ -72,7 +73,16 @@ export default async function DashboardPage() {
   // originate from University Central / Advancement itself, not only a
   // department), so they share the submission-related UI with Department
   // Users rather than being treated purely as a reviewing body for these.
-  const canSubmit = userRole === Role.DEPARTMENT_USER || userRole === Role.ADVANCEMENT_OFFICE;
+  const canSubmit = userRole === Role.DEPARTMENT_USER || userRole === Role.ADVANCEMENT_OFFICE || userRole === Role.ADMIN;
+
+  // Where this role's review queue lives, if they have one. Admin isn't
+  // tied to a single stage, so no direct link is offered for them here.
+  const REVIEWER_PATH_BY_ROLE: Partial<Record<Role, string>> = {
+    [Role.ADVANCEMENT_OFFICE]: '/reviewer/advancement',
+    [Role.SENATE_DIVISION]: '/reviewer/senate',
+    [Role.COUNCIL]: '/reviewer/council',
+  };
+  const reviewerPath = REVIEWER_PATH_BY_ROLE[userRole];
 
   const departmentWhereClause = isReviewingBody
     ? {}
@@ -341,8 +351,8 @@ export default async function DashboardPage() {
                       {request.status.replace('_', ' ')}
                     </span>
 
-                    {/* ACTION BUTTON IF REVISION IS NEEDED */}
-                    {isRevision && canSubmit && (
+                    {/* ACTION BUTTON IF REVISION IS NEEDED -- only on requests the viewer actually submitted */}
+                    {isRevision && canSubmit && request.userId === currentUserId && (
                       <Link
                         href={`/requestform?draftId=${request.id}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-xs"
@@ -352,8 +362,8 @@ export default async function DashboardPage() {
                       </Link>
                     )}
 
-                    {/* ACTION BUTTON IF DEPARTMENT RESPONSE IS NEEDED */}
-                    {isAwaitingResponse && canSubmit && (
+                    {/* ACTION BUTTON IF DEPARTMENT RESPONSE IS NEEDED -- same ownership check */}
+                    {isAwaitingResponse && canSubmit && request.userId === currentUserId && (
                       <Link
                         href={`/reviewer/department/${request.id}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-[#5D5CFF] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#4c4be6] transition-colors shadow-xs"
@@ -402,6 +412,7 @@ export default async function DashboardPage() {
             <div className="bg-white rounded-2xl border border-slate-100 p-3 space-y-1 shadow-sm">
               {[
                 { label: "Submit New Proposal", href: "/requestform", icon: PlusCircle, color: "text-[#5D5CFF] bg-[#5D5CFF]/5", visible: canSubmit },
+                { label: "Review Applications", href: reviewerPath || "/reviewer", icon: ShieldCheck, color: "text-emerald-600 bg-emerald-50", visible: !!reviewerPath },
                 { label: "Track System Folders", href: "/dashboard", icon: FileText, color: "text-blue-500 bg-blue-50", visible: true }
               ].filter(a => a.visible).map((action, index) => {
                 const ActionIcon = action.icon;

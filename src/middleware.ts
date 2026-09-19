@@ -25,16 +25,15 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    const rawDept = (token.department as string) || "";
-    const normalizedDept = rawDept.trim().replace(/[\s-]+/g, "_").toUpperCase();
+    const role = (token.role as string) || "";
 
-    if (normalizedDept.includes("ADVANCEMENT")) {
+    if (role === "ADVANCEMENT_OFFICE") {
       return NextResponse.redirect(new URL("/reviewer/advancement", req.url));
     }
-    if (normalizedDept.includes("SENATE")) {
+    if (role === "SENATE_DIVISION") {
       return NextResponse.redirect(new URL("/reviewer/senate", req.url));
     }
-    if (normalizedDept.includes("COUNCIL")) {
+    if (role === "COUNCIL") {
       return NextResponse.redirect(new URL("/reviewer/council", req.url));
     }
 

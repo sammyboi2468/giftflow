@@ -3,6 +3,7 @@
 import { db } from "@/lib/db";
 import { RequestStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
+import { notifyStatusChange } from "@/lib/notify";
 
 interface SubmitDepartmentResponseInput {
   applicationId: string;
@@ -21,6 +22,15 @@ export async function submitDepartmentResponse({
     const session = await auth();
     if (!session?.user) {
       return { success: false, error: "Unauthorized access." };
+    }
+
+    const application = await db.giftRequest.findUnique({
+      where: { id: applicationId },
+      select: { title: true, userId: true },
+    });
+
+    if (!application) {
+      return { success: false, error: "Application not found." };
     }
 
     await db.$transaction(async (tx) => {
@@ -45,6 +55,13 @@ export async function submitDepartmentResponse({
           author: { connect: { id: session.user.id } },
         },
       });
+    });
+
+    await notifyStatusChange({
+      requestId: applicationId,
+      title: application.title ?? "Untitled application",
+      applicantUserId: application.userId,
+      newStatus: RequestStatus.SENATE_PROCESSING,
     });
 
     return { success: true };

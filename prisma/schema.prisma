@@ -39,6 +39,7 @@ model User {
   password               String?
   role                   Role          @default(DEPARTMENT_USER)
   department             String?
+  stageHistoryActions    StageHistory[]
   faculty                String?
   office                 String?
   giftRequests           GiftRequest[]
@@ -66,6 +67,7 @@ model GiftRequest {
   purpose               String?
   hasConflictOfInterest Boolean       @default(false)
   status                RequestStatus @default(SUBMITTED)
+  stageHistory          StageHistory[]
   currentStage          Role      @default(ADVANCEMENT_OFFICE)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
@@ -84,6 +86,19 @@ model GiftDocument {
   fileUrl       String
   fileSize      Int
   createdAt     DateTime    @default(now())
+}
+
+model StageHistory {
+  id              String        @id @default(cuid())
+  giftRequestId   String
+  giftRequest     GiftRequest   @relation(fields: [giftRequestId], references: [id], onDelete: Cascade)
+  stage           Role          // which reviewer role acted (ADVANCEMENT_OFFICE / SENATE_DIVISION / COUNCIL)
+  action          String        // "APPROVE" | "REJECT" | "REQUEST_INFO"
+  resultingStatus RequestStatus
+  actedByUserId   String?
+  actedBy         User?         @relation(fields: [actedByUserId], references: [id])
+  notes           String?       @db.Text
+  createdAt       DateTime      @default(now())
 }
 
 model ActivityLog {

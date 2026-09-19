@@ -2,15 +2,16 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notFound, redirect } from "next/navigation";
 import { RequestStatus, Role } from "@prisma/client";
-import { Clock3, ShieldCheck } from "lucide-react";
+import { Clock3, ShieldCheck, History } from "lucide-react";
+import Link from "next/link";
 import ApplicationsList, { OldestPendingStat } from "@/components/application-list/page";
 
-// Map URL stage param to database RequestStatus (or list of statuses)
-const STAGE_STATUS_MAP: Record<string, RequestStatus[]> = {
-  advancement: [RequestStatus.ADVANCEMENT_REVIEW],
-  senate: [RequestStatus.SENATE_REVIEW, RequestStatus.SENATE_PROCESSING],
-  "senate-processing": [RequestStatus.SENATE_PROCESSING],
-  council: [RequestStatus.COUNCIL_REVIEW],
+// Map URL stage param to database RequestStatus
+const STAGE_STATUS_MAP: Record<string, RequestStatus> = {
+  advancement: RequestStatus.ADVANCEMENT_REVIEW,
+  senate: RequestStatus.SENATE_REVIEW,
+  "senate-processing": RequestStatus.SENATE_PROCESSING,
+  council: RequestStatus.COUNCIL_REVIEW,
 };
 
 // Map URL stage param to authorized user Role requirement
@@ -32,9 +33,9 @@ export default async function ReviewerStagePage({
   if (!session?.user) redirect("/login");
 
   const normalizedStage = stage.toLowerCase();
-  const targetStatuses = STAGE_STATUS_MAP[normalizedStage];
+  const targetStatus = STAGE_STATUS_MAP[normalizedStage];
 
-  if (!targetStatuses) notFound();
+  if (!targetStatus) notFound();
 
   // 🔒 RBAC Access Control Guard
   const userRole = session.user.role as Role | undefined;
@@ -50,15 +51,19 @@ export default async function ReviewerStagePage({
     redirect("/login");
   }
 
-  // Fetch applications matching ANY of the allowed statuses for this stage
+  // The "senate" view covers the whole senate workflow in one place: fresh
+  // items awaiting initial review (SENATE_REVIEW) and items that came back
+  // from the department and need final senate processing (SENATE_PROCESSING).
+  const statusFilter =
+    normalizedStage === "senate"
+      ? { in: [RequestStatus.SENATE_REVIEW, RequestStatus.SENATE_PROCESSING] }
+      : targetStatus;
+
+  // Fetch applications pending for this specific stage
   const applications = await db.giftRequest.findMany({
-    where: { 
-      status: { in: targetStatuses } 
-    },
+    where: { status: statusFilter },
     include: {
       user: { select: { name: true, department: true } },
-      documents: true,
-      comments: { orderBy: { createdAt: "desc" } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -66,6 +71,10 @@ export default async function ReviewerStagePage({
   const isSenate = normalizedStage === "senate" || normalizedStage === "senate-processing";
   const isCouncil = normalizedStage === "council";
 
+  // Oldest item in the queue -- applications are ordered newest first, so
+  // the last entry has been waiting the longest. The raw date is picked
+  // here (pure); "how many days ago" is computed client-side, in
+  // OldestPendingStat, since that requires reading the current time.
   const oldestCreatedAt = applications.length > 0 ? applications[applications.length - 1].createdAt : null;
 
   return (
@@ -90,6 +99,13 @@ export default async function ReviewerStagePage({
                 Logged in as <span className="font-semibold text-white">{session.user.name}</span>{" "}
                 ({session.user.department || userRole})
               </p>
+              <Link
+                href={`/reviewer/${stage}/history`}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/20 transition-colors"
+              >
+                <History className="h-3.5 w-3.5" />
+                View Full History
+              </Link>
             </div>
 
             <div className="flex shrink-0 gap-6 rounded-xl bg-white/10 px-6 py-4">
