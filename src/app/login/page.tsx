@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, Suspense } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, getSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl');
@@ -29,20 +29,19 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Helper function to determine destination route based on user role
+   * Department User, Advancement Office, and Admin can all submit
+   * requests, so the dashboard (with its submit button, revision/response
+   * banners, etc.) is genuinely useful as their home. Senate and Council
+   * can never submit -- for them the dashboard has nothing to offer beyond
+   * a link to their queue, so they go straight there instead.
    */
   const getRoleBasedRedirectPath = (role?: string) => {
     switch (role?.toUpperCase()) {
       case 'SENATE':
       case 'SENATE_DIVISION':
         return '/reviewer/senate';
-      case 'ADVANCEMENT':
-      case 'ADVANCEMENT_OFFICE':
-        return '/reviewer/advancement';
       case 'COUNCIL':
         return '/reviewer/council';
-      case 'DEPARTMENT':
-      case 'APPLICANT':
       default:
         return '/dashboard';
     }
@@ -149,7 +148,9 @@ function LoginForm() {
         />
 
         <div className="relative z-10 w-full max-w-md space-y-6">
-          <div className="login-pop mb-6 flex items-center gap-2 lg:hidden">
+          <div
+            className="login-pop mb-6 flex items-center gap-2 lg:hidden"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#5D5CFF] text-white">
               <Gift className="h-5 w-5" />
             </div>
@@ -425,13 +426,5 @@ function LoginForm() {
         }
       `}</style>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center text-sm text-gray-500">Loading...</div>}>
-      <LoginForm />
-    </Suspense>
   );
 }

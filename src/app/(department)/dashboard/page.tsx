@@ -129,15 +129,21 @@ export default async function DashboardPage() {
     take: 10,
   });
 
-  // Filter specifically for items requiring revision
+  // Filter for items requiring revision -- scoped to requests the viewer
+  // themselves submitted, even for reviewing-body roles whose overall
+  // pipeline query is system-wide. Otherwise Advancement Office (say)
+  // would see EVERY revision-requested item across the whole system in
+  // their own "action required" banner, including ones they themselves
+  // just sent back to someone else -- the ball is in the sender's court,
+  // not theirs, so it must never appear here for anyone but the sender.
   const revisionRequests = activeRequestsFromDb.filter(
-    (req) => req.status === RequestStatus.REVISION_REQUESTED
+    (req) => req.status === RequestStatus.REVISION_REQUESTED && req.userId === currentUserId
   );
 
-  // Filter specifically for items awaiting a department response to a
-  // Decision Extract (issued by Senate)
+  // Same ownership scoping for items awaiting a department response to a
+  // Decision Extract (issued by Senate).
   const awaitingResponseRequests = activeRequestsFromDb.filter(
-    (req) => req.status === RequestStatus.AWAITING_DEPARTMENT_RESPONSE
+    (req) => req.status === RequestStatus.AWAITING_DEPARTMENT_RESPONSE && req.userId === currentUserId
   );
 
   // Fetch Recent Activity Logs
