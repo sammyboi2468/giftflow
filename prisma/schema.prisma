@@ -50,6 +50,15 @@ model User {
   updatedAt              DateTime      @default(now()) @updatedAt
 }
 
+model AccessRequest {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  department  String?
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
+}
+
 model GiftRequest {
   id                    String        @id @default(cuid())
   userId                String
