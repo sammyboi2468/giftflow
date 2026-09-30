@@ -41,6 +41,11 @@ const STEPS: { id: 1 | 2 | 3 | 4; label: string; icon: typeof FileText }[] = [
   { id: 4, label: 'Review', icon: CheckCircle2 },
 ];
 
+// Shared field style. text-base on phones stops iOS Safari zooming the page
+// when a field is focused; it drops back to text-sm from sm up.
+const FIELD_CLASS =
+  'mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-base text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 sm:text-sm';
+
 const FILE_KEY_TO_DOC_TYPE: Record<keyof FileUploadState, string> = {
   file_deptRecommendation: 'DEPT_RECOMMENDATION',
   file_signedForm: 'SIGNED_FORM',
@@ -413,32 +418,33 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-4xl px-6 py-8">
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Hero Header */}
-        <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-8 shadow-sm">
+        <div className="relative mb-4 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 shadow-sm sm:mb-6 sm:p-8">
           <Gift
-            className="pointer-events-none absolute -right-6 -top-6 h-44 w-44 text-white/10"
+            className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 text-white/10 sm:h-44 sm:w-44"
             strokeWidth={1}
           />
-          <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
-            <div>
+          <div className="relative flex flex-col justify-between gap-5 sm:gap-6 md:flex-row md:items-start">
+            <div className="min-w-0">
               <span className="inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white">
                 {draftId ? 'Editing draft' : 'New submission'}
               </span>
-              <h1 className="mt-3 text-2xl font-bold text-white">Submit New Gift Proposal</h1>
+              <h1 className="mt-3 text-xl font-bold text-white sm:text-2xl">Submit New Gift Proposal</h1>
               <p className="mt-1 max-w-md text-sm text-indigo-100">
                 {lastSavedAt
                   ? `Draft saved at ${lastSavedAt}`
                   : 'Fill in the details below to route this proposal for departmental review.'}
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            {/* Buttons share the row equally on phones, sit at the right from md up */}
+            <div className="flex w-full items-center gap-2 md:w-auto md:shrink-0">
               {draftId && (
                 <button
                   type="button"
                   onClick={handleDeleteDraft}
                   disabled={isDeletingDraft}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-50"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-white/10 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-50 md:flex-none"
                 >
                   <Trash2 className="h-4 w-4" />
                   {isDeletingDraft ? 'Deleting...' : 'Delete Draft'}
@@ -448,7 +454,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                 type="button"
                 onClick={() => persistDraft(false)}
                 disabled={isSavingDraft}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-50"
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-white px-3.5 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-50 md:flex-none"
               >
                 <Save className="h-4 w-4" />
                 {isSavingDraft ? 'Saving...' : 'Save Draft'}
@@ -458,13 +464,15 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
         </div>
 
         {submitError && (
-          <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-700">
+          <div className="mb-4 break-words rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-700 sm:mb-6">
             {submitError}
           </div>
         )}
 
-        {/* Steps Navigation Bar */}
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+        {/* Steps Navigation Bar
+            On phones only the current step shows its label (others are icon-only),
+            so all four fit on one row without sideways scrolling. */}
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-1 sm:mb-6">
           {STEPS.map(({ id, label, icon: Icon }) => {
             const isActive = step === id;
             const isComplete = id < step;
@@ -472,27 +480,29 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
               <button
                 key={id}
                 type="button"
+                aria-label={label}
+                aria-current={isActive ? 'step' : undefined}
                 onClick={() => {
                   if (id < step) setStep(id);
                 }}
                 disabled={id > step}
-                className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
+                className={`flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-3 py-3 text-sm font-semibold transition-all sm:flex-1 sm:px-4 ${
                   isActive
-                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                    ? 'flex-[2] border-indigo-600 bg-indigo-600 text-white shadow-sm'
                     : isComplete
-                    ? 'cursor-pointer border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100/70'
-                    : 'cursor-not-allowed border-gray-100 bg-white text-gray-400'
+                    ? 'flex-1 cursor-pointer border-indigo-100 bg-indigo-50 text-indigo-600 hover:bg-indigo-100/70'
+                    : 'flex-1 cursor-not-allowed border-gray-100 bg-white text-gray-400'
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                {label}
+                <span className={isActive ? '' : 'hidden sm:inline'}>{label}</span>
               </button>
             );
           })}
         </div>
 
         {/* Form Container */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
           <form onSubmit={handleSubmit}>
             {/* Step 1: General Info */}
             {step === 1 && (
@@ -505,7 +515,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     value={formData.title}
                     onChange={handleChange}
                     placeholder="e.g., Annual Research Sponsorship"
-                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className={FIELD_CLASS}
                     required
                   />
                 </div>
@@ -517,7 +527,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     value={formData.donorName}
                     onChange={handleChange}
                     placeholder="e.g., Acme Foundation"
-                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className={FIELD_CLASS}
                     required
                   />
                 </div>
@@ -529,7 +539,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     value={formData.donorEmail}
                     onChange={handleChange}
                     placeholder="e.g., contact@acmefoundation.org"
-                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className={FIELD_CLASS}
                   />
                   <p className="mt-1 text-xs text-gray-400">
                     Used to send the appreciation letter once approved. Optional for now.
@@ -541,7 +551,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     name="giftType"
                     value={formData.giftType}
                     onChange={handleChange}
-                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className={FIELD_CLASS}
                   >
                     <option value="Prize">Prize</option>
                     <option value="Donation">Donation</option>
@@ -564,7 +574,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                         value={formData.department}
                         onChange={handleChange}
                         placeholder="e.g., University Central, Advancement Office, or a specific department"
-                        className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        className={FIELD_CLASS}
                         required
                       />
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -573,7 +583,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                             key={preset}
                             type="button"
                             onClick={() => setFormData((prev) => ({ ...prev, department: preset }))}
-                            className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                            className={`rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors sm:py-1 ${
                               formData.department === preset
                                 ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
                                 : 'border-gray-200 text-gray-600 hover:border-indigo-300 hover:text-indigo-600'
@@ -584,7 +594,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                         ))}
                       </div>
                       <p className="mt-1 text-xs text-gray-400">
-                        Specify where this gift is coming from -- it doesn`t have to be a department.
+                        Specify where this gift is coming from -- it doesn&apos;t have to be a department.
                       </p>
                     </>
                   ) : (
@@ -595,7 +605,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                         value={effectiveDepartment}
                         readOnly
                         disabled
-                        className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-sm text-gray-500"
+                        className="mt-1.5 w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 p-2.5 text-base text-gray-500 sm:text-sm"
                       />
                       <p className="mt-1 text-xs text-gray-400">
                         Set from your login session and cannot be edited here.
@@ -609,16 +619,17 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
             {/* Step 2: Financials */}
             {step === 2 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+                  <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700">Estimated Amount</label>
                     <input
                       type="number"
                       name="amount"
+                      inputMode="decimal"
                       value={formData.amount}
                       onChange={handleChange}
                       placeholder="0.00"
-                      className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                      className={FIELD_CLASS}
                     />
                   </div>
                   <div>
@@ -627,7 +638,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                       name="currency"
                       value={formData.currency}
                       onChange={handleChange}
-                      className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                      className={FIELD_CLASS}
                     >
                       <option value="NGN">NGN</option>
                       <option value="USD">USD</option>
@@ -644,7 +655,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     value={formData.purpose}
                     onChange={handleChange}
                     placeholder="Provide detailed information regarding the gift purpose..."
-                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className={FIELD_CLASS}
                   />
                 </div>
                 <div>
@@ -653,7 +664,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     name="hasConflict"
                     value={formData.hasConflict}
                     onChange={handleChange}
-                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    className={FIELD_CLASS}
                   >
                     <option value="false">No conflict identified</option>
                     <option value="true">Potential conflict exists</option>
@@ -676,20 +687,20 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                   return (
                     <div
                       key={key}
-                      className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-4 transition-colors hover:bg-gray-50"
+                      className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition-colors hover:bg-gray-50 sm:p-4"
                     >
-                      <div className="mt-0.5 rounded-lg bg-indigo-50 p-2 text-indigo-600">
+                      <div className="mt-0.5 shrink-0 rounded-lg bg-indigo-50 p-2 text-indigo-600">
                         <UploadCloud className="h-4 w-4" />
                       </div>
-                      <div className="flex-1">
+                      <div className="min-w-0 flex-1">
                         <label className="block text-sm font-medium text-gray-700">{label}</label>
                         {existingFileNames[fileKey] && (
-                          <p className="mt-0.5 text-xs font-medium text-emerald-600">
+                          <p className="mt-0.5 break-all text-xs font-medium text-emerald-600">
                             Current file: {existingFileNames[fileKey]}
                           </p>
                         )}
                         {files[fileKey] && (
-                          <p className="mt-0.5 text-xs font-medium text-indigo-600">
+                          <p className="mt-0.5 break-all text-xs font-medium text-indigo-600">
                             Selected: {files[fileKey]?.name}
                           </p>
                         )}
@@ -699,7 +710,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                             fileInputRefs.current[fileKey] = el;
                           }}
                           onChange={(e) => handleFileChange(fileKey, e.target.files?.[0] || null)}
-                          className="mt-2 block w-full text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-700"
+                          className="mt-2 block w-full min-w-0 text-sm text-gray-500 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-700"
                         />
                       </div>
                     </div>
@@ -715,7 +726,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                   <CheckCircle2 className="h-5 w-5 text-indigo-600" />
                   Review Submission
                 </h2>
-                <div className="space-y-2 rounded-xl border border-gray-100 bg-gray-50/60 p-4 text-sm text-gray-900">
+                <div className="space-y-2 break-words rounded-xl border border-gray-100 bg-gray-50/60 p-3 text-sm text-gray-900 sm:p-4">
                   <p>
                     <span className="font-semibold text-gray-700">Title:</span>{' '}
                     <span>{formData.title || 'N/A'}</span>
@@ -742,7 +753,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                 </div>
                 <label
                   htmlFor="ethicalClearance"
-                  className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-gray-100 bg-gray-50/60 p-4 transition-colors hover:bg-gray-50"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-gray-100 bg-gray-50/60 p-3 transition-colors hover:bg-gray-50 sm:p-4"
                 >
                   <input
                     type="checkbox"
@@ -751,7 +762,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                     checked={formData.ethicalClearance}
                     onChange={handleChange}
                     required
-                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="text-sm font-medium text-gray-700">
                     I declare that the information provided is accurate and complies with institutional policies.
@@ -761,12 +772,12 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
             )}
 
             {/* Form Actions */}
-            <div className="mt-8 flex justify-between border-t border-gray-100 pt-5">
+            <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-5 sm:mt-8">
               <button
                 type="button"
                 onClick={handleBack}
                 disabled={step === 1}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 sm:py-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
@@ -776,7 +787,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 sm:py-2"
                 >
                   Next
                   <ArrowRight className="h-4 w-4" />
@@ -785,7 +796,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                 <button
                   type="submit"
                   disabled={isSubmitting || !formData.ethicalClearance}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50 sm:py-2"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

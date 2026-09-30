@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import { 
-  CheckCircle2, 
-  XCircle, 
-  RotateCcw, 
-  Clock, 
-  Send, 
+import {
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Clock,
+  Send,
   MessageSquare,
-  UserCheck
+  UserCheck,
 } from "lucide-react";
 
 export interface ActivityLogItem {
@@ -30,7 +30,7 @@ interface ReviewTimelineProps {
 export function ReviewTimeline({ logs }: ReviewTimelineProps) {
   if (!logs || logs.length === 0) {
     return (
-      <div className="bg-[#0F172A] p-4 rounded-xl border border-slate-800 text-center text-xs text-slate-500">
+      <div className="rounded-xl border border-slate-800 bg-[#0F172A] p-4 text-center text-xs text-slate-500">
         No audit activity recorded yet.
       </div>
     );
@@ -84,12 +84,13 @@ export function ReviewTimeline({ logs }: ReviewTimelineProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-        <Clock className="w-3.5 h-3.5 text-indigo-400" /> Audit Trail & Governance Timeline
+    <div className="min-w-0 space-y-4">
+      <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        <Clock className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+        Audit Trail & Governance Timeline
       </h4>
 
-      <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-800">
+      <div className="relative space-y-5 pl-6 before:absolute before:bottom-2 before:left-2.5 before:top-2 before:w-0.5 before:bg-slate-800 sm:space-y-6">
         {logs.map((log) => {
           const config = getActionConfig(log.action);
           const Icon = config.icon;
@@ -97,21 +98,22 @@ export function ReviewTimeline({ logs }: ReviewTimelineProps) {
           const logNote = log.notes || log.details;
 
           return (
-            <div key={log.id} className="relative group">
+            <div key={log.id} className="group relative">
               {/* Timeline Indicator Node */}
               <div
-                className={`absolute -left-6 top-0.5 h-5 w-5 rounded-full ${config.bgColor} border ${config.borderColor} flex items-center justify-center shrink-0`}
+                className={`absolute -left-6 top-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${config.bgColor} ${config.borderColor}`}
               >
-                <Icon className={`w-3 h-3 ${config.color}`} />
+                <Icon className={`h-3 w-3 ${config.color}`} />
               </div>
 
               {/* Log Entry Content Card */}
-              <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-3.5 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className={`font-semibold capitalize ${config.color}`}>
+              <div className="min-w-0 space-y-1.5 rounded-xl border border-slate-800 bg-[#0F172A] p-3 sm:p-3.5">
+                {/* Label + timestamp: stacked on phones, inline from sm up */}
+                <div className="flex flex-col gap-0.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                  <span className={`break-words font-semibold capitalize ${config.color}`}>
                     {config.label}
                   </span>
-                  <span className="text-[10px] text-slate-500 font-mono">
+                  <span className="shrink-0 font-mono text-[10px] text-slate-500">
                     {new Date(log.createdAt).toLocaleString(undefined, {
                       dateStyle: "short",
                       timeStyle: "short",
@@ -119,14 +121,14 @@ export function ReviewTimeline({ logs }: ReviewTimelineProps) {
                   </span>
                 </div>
 
-                <div className="text-xs text-slate-400">
-                  By: <span className="text-slate-200 font-medium">{reviewerName}</span>
+                <div className="break-words text-xs text-slate-400">
+                  By: <span className="font-medium text-slate-200">{reviewerName}</span>
                 </div>
 
                 {logNote && (
-                  <div className="mt-2 bg-[#1E293B]/60 p-2.5 rounded-lg border border-slate-800/80 text-xs text-slate-300 italic flex items-start gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                    <span>{logNote}</span>
+                  <div className="mt-2 flex items-start gap-2 rounded-lg border border-slate-800/80 bg-[#1E293B]/60 p-2.5 text-xs italic text-slate-300">
+                    <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-500" />
+                    <span className="min-w-0 break-words">{logNote}</span>
                   </div>
                 )}
               </div>

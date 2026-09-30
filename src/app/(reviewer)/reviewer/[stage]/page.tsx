@@ -146,20 +146,20 @@ export default async function ReviewerStagePage({
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 font-sans sm:p-8 lg:p-12">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-6">
         {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-8">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 sm:p-8">
           <ShieldCheck
-            className="pointer-events-none absolute -right-6 -top-6 h-44 w-44 text-white/10"
+            className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 text-white/10 sm:h-44 sm:w-44"
             strokeWidth={1}
           />
-          <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-start">
-            <div>
+          <div className="relative flex flex-col justify-between gap-5 sm:gap-6 md:flex-row md:items-start">
+            <div className="min-w-0">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white">
                 <Clock3 className="h-3.5 w-3.5" />
                 Active review portal
               </span>
-              <h1 className="mt-3 text-2xl font-bold capitalize text-white">
+              <h1 className="mt-3 break-words text-xl font-bold capitalize text-white sm:text-2xl">
                 {stage.replace("-", " ")} office review
               </h1>
               <p className="mt-1 text-sm text-indigo-100">
@@ -175,14 +175,15 @@ export default async function ReviewerStagePage({
               </Link>
             </div>
 
-            <div className="flex shrink-0 gap-6 rounded-xl bg-white/10 px-6 py-4">
+            {/* Stats wrap onto a second line on phones instead of overflowing the hero */}
+            <div className="flex w-full flex-wrap gap-x-6 gap-y-3 rounded-xl bg-white/10 px-5 py-4 md:w-auto md:shrink-0 md:px-6">
               <div>
-                <span className="text-3xl font-extrabold text-white">{applications.length}</span>
+                <span className="text-2xl font-extrabold text-white sm:text-3xl">{applications.length}</span>
                 <p className="text-xs font-medium text-indigo-100">Applications pending</p>
               </div>
               {returnedCount > 0 && (
                 <div>
-                  <span className="text-3xl font-extrabold text-amber-200">{returnedCount}</span>
+                  <span className="text-2xl font-extrabold text-amber-200 sm:text-3xl">{returnedCount}</span>
                   <p className="text-xs font-medium text-indigo-100">Returned to you</p>
                 </div>
               )}

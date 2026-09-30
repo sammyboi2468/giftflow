@@ -120,25 +120,27 @@ export default function DepartmentResponseForm({
 
   if (submitted) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-6 shadow-sm space-y-2 font-sans text-center">
-        <CheckCircle2 className="h-6 w-6 text-emerald-600 mx-auto" />
-        <p className="text-sm font-bold text-emerald-900">Response submitted -- redirecting to your dashboard...</p>
+      <div className="space-y-2 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-center font-sans shadow-sm sm:p-6">
+        <CheckCircle2 className="mx-auto h-6 w-6 text-emerald-600" />
+        <p className="text-sm font-bold text-emerald-900">
+          Response submitted -- redirecting to your dashboard...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-6 shadow-sm space-y-5 font-sans">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wide">
+    <div className="space-y-5 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 font-sans shadow-sm sm:p-6">
+      {/* Header: the Decision Extract button drops below the text on phones */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-amber-800">
             Action Required
           </span>
-          <h3 className="text-base font-bold text-slate-900 mt-2">
-            Awaiting Department Response
-          </h3>
-          <p className="text-xs text-slate-600 mt-0.5">
-            Review the issued Decision Extract and submit your official acknowledgement or required documentation.
+          <h3 className="mt-2 text-base font-bold text-slate-900">Awaiting Department Response</h3>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Review the issued Decision Extract and submit your official acknowledgement or required
+            documentation.
           </p>
         </div>
 
@@ -147,7 +149,7 @@ export default function DepartmentResponseForm({
             href={decisionExtractUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#5D5CFF] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#4c4be6] transition-all shrink-0 cursor-pointer"
+            className="inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5D5CFF] px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:bg-[#4c4be6] sm:w-auto sm:py-2"
           >
             <FileText className="h-4 w-4" />
             View Decision Extract
@@ -156,26 +158,26 @@ export default function DepartmentResponseForm({
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 text-rose-600 rounded-xl text-xs font-medium">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
+        <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-600">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="min-w-0 break-words">{error}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Action Type Selection */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => setResponseType("ACKNOWLEDGE")}
-            className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+            className={`cursor-pointer rounded-xl border p-3 text-left text-xs transition-all ${
               responseType === "ACKNOWLEDGE"
                 ? "border-[#5D5CFF] bg-white font-bold text-slate-900 ring-2 ring-[#5D5CFF]/20"
                 : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
             }`}
           >
             <div className="font-semibold text-slate-900">1. Acknowledge Decision</div>
-            <div className="text-[11px] text-slate-500 font-normal mt-0.5">
+            <div className="mt-0.5 text-[11px] font-normal text-slate-500">
               Confirm receipt and accept the terms of the decision extract.
             </div>
           </button>
@@ -183,22 +185,22 @@ export default function DepartmentResponseForm({
           <button
             type="button"
             onClick={() => setResponseType("PROVIDE_INFO")}
-            className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+            className={`cursor-pointer rounded-xl border p-3 text-left text-xs transition-all ${
               responseType === "PROVIDE_INFO"
                 ? "border-[#5D5CFF] bg-white font-bold text-slate-900 ring-2 ring-[#5D5CFF]/20"
                 : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
             }`}
           >
             <div className="font-semibold text-slate-900">2. Provide Requested Info / Docs</div>
-            <div className="text-[11px] text-slate-500 font-normal mt-0.5">
+            <div className="mt-0.5 text-[11px] font-normal text-slate-500">
               Submit additional details or documents requested by Senate/Council.
             </div>
           </button>
         </div>
 
-        {/* Response Text area */}
+        {/* Response Text area (text-base on phones stops iOS zoom-on-focus) */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
+          <label className="mb-1 block text-xs font-semibold text-slate-700">
             Department Response & Notes <span className="text-rose-500">*</span>
           </label>
           <textarea
@@ -210,7 +212,7 @@ export default function DepartmentResponseForm({
                 ? "e.g., The Department of Computer Science hereby acknowledges receipt of the decision extract and accepts the approved terms..."
                 : "e.g., Providing the revised project budget breakdown as requested in section B of the decision extract..."
             }
-            className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-900 outline-none focus:border-[#5D5CFF] resize-none"
+            className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-base text-slate-900 outline-none focus:border-[#5D5CFF] sm:text-xs"
           />
         </div>
 
@@ -221,7 +223,7 @@ export default function DepartmentResponseForm({
           </label>
 
           {!attachmentUrl ? (
-            <label className="flex items-center justify-center gap-2 p-3 border border-dashed border-slate-300 bg-white rounded-xl cursor-pointer hover:border-[#5D5CFF] transition-all">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white p-3 transition-all hover:border-[#5D5CFF]">
               {isUploading ? (
                 <div className="flex items-center gap-2 text-xs font-semibold text-[#5D5CFF]">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -229,8 +231,8 @@ export default function DepartmentResponseForm({
                 </div>
               ) : (
                 <>
-                  <UploadCloud className="h-4 w-4 text-[#5D5CFF]" />
-                  <span className="text-xs text-slate-600 font-medium">
+                  <UploadCloud className="h-4 w-4 shrink-0 text-[#5D5CFF]" />
+                  <span className="text-center text-xs font-medium text-slate-600">
                     Upload supporting PDF / document
                   </span>
                 </>
@@ -244,19 +246,21 @@ export default function DepartmentResponseForm({
               />
             </label>
           ) : (
-            <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs">
-              <div className="flex items-center gap-2">
-                <FileCheck className="h-4 w-4 text-emerald-600" />
-                <span className="font-medium text-emerald-900">{attachmentName}</span>
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs">
+              {/* min-w-0 + truncate keeps long filenames from pushing the remove button off-screen */}
+              <div className="flex min-w-0 items-center gap-2">
+                <FileCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span className="truncate font-medium text-emerald-900">{attachmentName}</span>
               </div>
               <button
                 type="button"
+                aria-label="Remove attachment"
                 onClick={() => {
                   setAttachmentUrl("");
                   setAttachmentName("");
                   toast.info("Attachment removed.");
                 }}
-                className="text-slate-400 hover:text-rose-600 p-1"
+                className="shrink-0 p-1.5 text-slate-400 hover:text-rose-600"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -264,12 +268,12 @@ export default function DepartmentResponseForm({
           )}
         </div>
 
-        {/* Submit Button */}
+        {/* Submit Button: full width on phones */}
         <div className="pt-2">
           <button
             type="submit"
             disabled={loading || isUploading}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#5D5CFF] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#4c4be6] transition-all disabled:opacity-50 cursor-pointer"
+            className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5D5CFF] px-5 py-3 text-xs font-semibold text-white transition-all hover:bg-[#4c4be6] disabled:opacity-50 sm:w-auto sm:py-2.5"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             Submit Official Department Response

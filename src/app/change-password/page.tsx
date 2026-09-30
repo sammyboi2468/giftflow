@@ -80,50 +80,59 @@ export default function ChangePasswordPage() {
     }
   };
 
+  // text-base on phones stops iOS Safari zooming the page when a field is focused
+  const inputBase =
+    'block w-full rounded-lg border border-gray-200 bg-gray-50/50 py-2.5 text-base sm:text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100';
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-6 font-sans">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 sm:p-6 font-sans">
       <div className="w-full max-w-md">
-        <div className="mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white shadow-sm">
+        <div className="mb-4 sm:mb-6 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 sm:p-6 text-white shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-lg font-bold">Set a New Password</h1>
               <p className="text-xs text-indigo-100">Required before you can continue</p>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
           <p className="mb-5 text-sm text-gray-500">
-            You`re signed in with a temporary password. Choose a new one to continue to your dashboard.
+            You&apos;re signed in with a temporary password. Choose a new one to continue to your dashboard.
           </p>
 
           {error && (
-            <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+            <div role="alert" className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700 break-words">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Current (temporary) password</label>
+              <label htmlFor="current-password" className="block text-xs font-semibold text-gray-700 mb-1">
+                Current (temporary) password
+              </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="current-password"
                   type={showCurrent ? 'text' : 'password'}
                   required
+                  autoComplete="current-password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="block w-full rounded-lg border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                  className={`${inputBase} pl-10 pr-12`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrent((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-400 hover:text-gray-600"
                 >
                   {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -131,23 +140,28 @@ export default function ChangePasswordPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">New password</label>
+              <label htmlFor="new-password" className="block text-xs font-semibold text-gray-700 mb-1">
+                New password
+              </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="new-password"
                   type={showNew ? 'text' : 'password'}
                   required
                   minLength={8}
+                  autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="block w-full rounded-lg border border-gray-200 bg-gray-50/50 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                  className={`${inputBase} pl-10 pr-12`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowNew((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  aria-label={showNew ? 'Hide new password' : 'Show new password'}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-400 hover:text-gray-600"
                 >
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -156,14 +170,18 @@ export default function ChangePasswordPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Confirm new password</label>
+              <label htmlFor="confirm-password" className="block text-xs font-semibold text-gray-700 mb-1">
+                Confirm new password
+              </label>
               <input
+                id="confirm-password"
                 type={showNew ? 'text' : 'password'}
                 required
                 minLength={8}
+                autoComplete="new-password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="block w-full rounded-lg border border-gray-200 bg-gray-50/50 p-2.5 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                className={`${inputBase} px-2.5`}
               />
             </div>
 

@@ -204,9 +204,9 @@ export default async function DashboardPage() {
     <div className="space-y-6 max-w-[1400px] mx-auto font-sans">
 
       {/* Welcome Banner Card */}
-      <div className="relative w-full overflow-hidden rounded-2xl bg-[#5D5CFF] p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm">
+      <div className="relative w-full overflow-hidden rounded-2xl bg-[#5D5CFF] p-5 sm:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm">
         <div className="z-10 space-y-2">
-          <div className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm">
+          <div className="inline-block max-w-full break-words px-3 py-1 bg-white/10 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm">
             Logged in as: {currentUser?.name || session.user.name || 'Authorized Session'}
             {userDepartment ? ` (${userDepartment})` : ''}
           </div>
@@ -222,11 +222,12 @@ export default async function DashboardPage() {
         </div>
 
         {canSubmit && (
-          <Link href="/requestform">
-            <button className="z-10 mt-6 md:mt-0 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#5D5CFF] shadow-sm hover:bg-slate-50 transition-all transform active:scale-95 shrink-0">
-              <PlusCircle className="h-4 w-4" />
-              New Gift Proposal
-            </button>
+          <Link
+            href="/requestform"
+            className="z-10 mt-5 md:mt-0 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#5D5CFF] shadow-sm hover:bg-slate-50 transition-all transform active:scale-95 shrink-0"
+          >
+            <PlusCircle className="h-4 w-4" />
+            New Gift Proposal
           </Link>
         )}
 
@@ -237,7 +238,7 @@ export default async function DashboardPage() {
 
       {/* REVISION REQUEST NOTIFICATION BANNER */}
       {revisionRequests.length > 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-5 shadow-sm space-y-3">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-4 sm:p-5 shadow-sm space-y-3">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 shrink-0">
               <AlertTriangle className="h-5 w-5" />
@@ -263,16 +264,16 @@ export default async function DashboardPage() {
                   key={request.id}
                   className="rounded-xl bg-white p-3 border border-amber-100 shadow-xs space-y-3"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="space-y-0.5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 space-y-0.5">
                       <p className="text-sm font-bold text-slate-800">{request.title}</p>
-                      <p className="text-xs text-slate-400 font-medium">
+                      <p className="break-words text-xs text-slate-400 font-medium">
                         ID: {request.id} · Updated {formatTimeAgo(request.updatedAt)}
                       </p>
                     </div>
                     <Link
                       href={`/requestform?draftId=${request.id}`}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-xs"
+                      className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 sm:py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-xs"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
                       Revise Proposal
@@ -280,7 +281,7 @@ export default async function DashboardPage() {
                   </div>
 
                   <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-amber-800">
                       <MessageSquareText className="h-3.5 w-3.5" />
                       <span>
                         Reviewer feedback
@@ -306,7 +307,7 @@ export default async function DashboardPage() {
 
       {/* DECISION EXTRACT / AWAITING DEPARTMENT RESPONSE BANNER */}
       {awaitingResponseRequests.length > 0 && (
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/90 p-5 shadow-sm space-y-3">
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/90 p-4 sm:p-5 shadow-sm space-y-3">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-[#5D5CFF]/10 text-[#5D5CFF] shrink-0">
               <Paperclip className="h-5 w-5" />
@@ -325,17 +326,17 @@ export default async function DashboardPage() {
             {awaitingResponseRequests.map((request) => (
               <div
                 key={request.id}
-                className="flex items-center justify-between rounded-xl bg-white p-3 border border-indigo-100 shadow-xs"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-white p-3 border border-indigo-100 shadow-xs"
               >
-                <div className="space-y-0.5">
+                <div className="min-w-0 space-y-0.5">
                   <p className="text-sm font-bold text-slate-800">{request.title}</p>
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="break-words text-xs text-slate-400 font-medium">
                     ID: {request.id} · Updated {formatTimeAgo(request.updatedAt)}
                   </p>
                 </div>
                 <Link
                   href={`/reviewer/department/${request.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#5D5CFF] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#4c4be6] transition-colors shadow-xs"
+                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-[#5D5CFF] px-3 py-2 sm:py-1.5 text-xs font-bold text-white hover:bg-[#4c4be6] transition-colors shadow-xs"
                 >
                   <Paperclip className="h-3.5 w-3.5" />
                   View Extract & Respond
@@ -403,13 +404,13 @@ export default async function DashboardPage() {
               : undefined;
 
             return (
-              <div key={request.id} className="block bg-white p-5 rounded-2xl border border-slate-100 space-y-4 shadow-sm group transition-all">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h4 className="font-bold text-slate-900 leading-snug">
+              <div key={request.id} className="block bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 space-y-4 shadow-sm group transition-all">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-slate-900 leading-snug break-words">
                       {request.title}
                     </h4>
-                    <p className="text-xs text-slate-400 font-medium mt-1">
+                    <p className="break-words text-xs text-slate-400 font-medium mt-1">
                       ID: {request.id} · <span className="text-slate-600 font-bold">{formattedValue}</span> · {formatSubmittedDate(request.createdAt)}
                       {isReviewingBody && request.user?.department && (
                         <span className="ml-2 font-semibold text-indigo-500">[{request.user.department}]</span>
@@ -417,7 +418,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
                     <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
                       request.status === RequestStatus.APPROVED ? 'text-emerald-600 bg-emerald-50' :
                       request.status === RequestStatus.REVISION_REQUESTED ? 'text-amber-600 bg-amber-50 animate-pulse' :
@@ -521,7 +522,7 @@ export default async function DashboardPage() {
           {/* Audit Log Timeline */}
           <div className="space-y-3">
             <h3 className="text-base font-bold text-slate-800 tracking-tight">Recent Activity Log</h3>
-            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-6 shadow-sm space-y-4">
               {activitiesFromDb.length === 0 ? (
                 <p className="text-xs font-semibold text-slate-400 text-center py-4">No recent activity logs recorded.</p>
               ) : (
@@ -530,7 +531,7 @@ export default async function DashboardPage() {
                     <span className={`h-2 w-2 rounded-full mt-1.5 shrink-0 ${
                       activityColors[index % activityColors.length]
                     }`} />
-                    <div className="space-y-0.5">
+                    <div className="min-w-0 space-y-0.5">
                       <p className="font-medium text-slate-700 leading-snug">{act.details}</p>
                       <span className="block text-[11px] font-medium text-slate-400">{formatTimeAgo(act.createdAt)}</span>
                     </div>

@@ -62,7 +62,7 @@ export default async function ReviewerStageHistoryPage({
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 font-sans sm:p-8 lg:p-12">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-4 sm:space-y-6">
         <Link
           href={`/reviewer/${stage}`}
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-[#5D5CFF] transition-colors"
@@ -71,21 +71,21 @@ export default async function ReviewerStageHistoryPage({
           Back to {stage} queue
         </Link>
 
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-8">
-          <History className="pointer-events-none absolute -right-6 -top-6 h-44 w-44 text-white/10" strokeWidth={1} />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 sm:p-8">
+          <History className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 text-white/10 sm:h-44 sm:w-44" strokeWidth={1} />
           <div className="relative">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white">
               <Clock className="h-3.5 w-3.5" />
               Full history
             </span>
-            <h1 className="mt-3 text-2xl font-bold capitalize text-white">{stage.replace("-", " ")} history</h1>
+            <h1 className="mt-3 text-xl font-bold capitalize text-white sm:text-2xl">{stage.replace("-", " ")} history</h1>
             <p className="mt-1 text-sm text-indigo-100">
               Every decision this stage has ever made -- {history.length} record{history.length === 1 ? "" : "s"}.
             </p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           {history.length === 0 ? (
             <p className="py-12 text-center text-xs font-semibold text-slate-400">
               No decisions recorded for this stage yet.
@@ -100,27 +100,27 @@ export default async function ReviewerStageHistoryPage({
                 };
                 const Icon = meta.icon;
                 return (
-                  <div key={entry.id} className="flex items-start gap-4 py-4">
+                  <div key={entry.id} className="flex items-start gap-3 py-4 sm:gap-4">
                     <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${meta.style}`}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 space-y-1">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h3 className="text-sm font-bold text-slate-900">
+                        <h3 className="min-w-0 break-words text-sm font-bold text-slate-900">
                           {entry.giftRequest.title || "Untitled request"}
                         </h3>
                         <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${meta.style}`}>
                           {meta.label}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500">
+                      <p className="break-words text-xs text-slate-500">
                         Donor: {entry.giftRequest.donorName || "N/A"}
                         {entry.giftRequest.amount != null && (
                           <> · {entry.giftRequest.currency || "NGN"} {entry.giftRequest.amount.toLocaleString()}</>
                         )}
                       </p>
-                      {entry.notes && <p className="text-xs text-slate-600 italic">&quot;{entry.notes}&quot;</p>}
-                      <p className="text-[10px] font-semibold text-slate-400">
+                      {entry.notes && <p className="break-words text-xs italic text-slate-600">&quot;{entry.notes}&quot;</p>}
+                      <p className="break-words text-[10px] font-semibold text-slate-400">
                         {entry.actedBy?.name || "Unknown reviewer"} · {new Date(entry.createdAt).toLocaleString()} ·
                         Resulting status: {entry.resultingStatus.replace(/_/g, " ")}
                       </p>

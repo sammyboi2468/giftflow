@@ -76,50 +76,52 @@ export default function DepartmentReportsPage() {
   return (
     <div className="flex-1 bg-[#F8FAFC] min-h-screen overflow-y-auto font-sans text-slate-600">
       
-      {/* 1. Header Area */}
-      <header className="bg-white border-b border-slate-100 px-8 py-4 flex items-center justify-between sticky top-0 z-20">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Department Reports</h1>
+      {/* 1. Header Area
+          Mobile: title + bell/avatar on row 1, full-width search on row 2 (not sticky, to save screen space).
+          md+: single row, sticky. */}
+      <header className="bg-white border-b border-slate-100 px-4 sm:px-8 py-4 flex flex-wrap items-center gap-3 md:gap-4 md:sticky md:top-0 z-20">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Department Reports</h1>
           <p className="text-xs font-medium text-slate-400 mt-0.5">Analyze gift allocations, processing pipelines, and submission metrics for your faculty</p>
         </div>
 
-        {/* Global Controls */}
-        <div className="flex items-center gap-4">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input 
-              type="text" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search reports..." 
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-black outline-none placeholder-slate-400 focus:border-[#5D5CFF] focus:bg-white transition-all"
-            />
-          </div>
-          
-          <button className="relative p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
-          </button>
-
-          <img 
-            src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" 
-            alt="User Avatar" 
-            className="h-8 w-8 rounded-full object-cover border border-slate-200"
+        <div className="relative order-last w-full md:order-none md:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search reports..." 
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm text-black outline-none placeholder-slate-400 focus:border-[#5D5CFF] focus:bg-white transition-all"
           />
         </div>
+
+        <button
+          aria-label="Notifications"
+          className="relative shrink-0 p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors"
+        >
+          <Bell className="h-4 w-4" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+        </button>
+
+        <img 
+          src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" 
+          alt="User Avatar" 
+          className="h-8 w-8 shrink-0 rounded-full object-cover border border-slate-200"
+        />
       </header>
 
       {/* Main Workspace Grid */}
-      <main className="p-6 max-w-[1400px] mx-auto space-y-6">
+      <main className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-4 sm:space-y-6">
 
         {/* 2. Controls & Filter Menu Track */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white border border-slate-100 p-4 rounded-2xl shadow-xs">
-          <div className="flex bg-slate-100/80 p-1 rounded-xl w-fit">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white border border-slate-100 p-3 sm:p-4 rounded-2xl shadow-xs">
+          <div className="flex w-full sm:w-fit bg-slate-100/80 p-1 rounded-xl">
             {(['This Month', 'This Quarter', 'This Year'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTimeframe(tab)}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                className={`flex-1 sm:flex-none whitespace-nowrap px-2 sm:px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   timeframe === tab
                     ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -130,8 +132,8 @@ export default function DepartmentReportsPage() {
             ))}
           </div>
 
-          <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors self-end sm:self-auto">
-            <Download className="h-3.5 w-3.5" />
+          <button className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+            <Download className="h-3.5 w-3.5 shrink-0" />
             Export Analytics Executive CSV
           </button>
         </div>
@@ -143,22 +145,23 @@ export default function DepartmentReportsPage() {
           </div>
         ) : (
           <>
-            {/* 3. Operational Performance Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 3. Operational Performance Overview Cards
+                1 col (phone) -> 2 cols (tablet, third card spans both) -> 3 cols (desktop) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               
               {/* Card 1: Total Value */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4 min-w-0">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Approved Value</span>
-                  <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-500 border border-emerald-100/50">
+                  <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-500 border border-emerald-100/50 shrink-0">
                     <DollarSign className="h-4 w-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight break-words">
                     ₦{totalApprovedValue.toLocaleString()}
                   </h3>
-                  <div className="flex items-center gap-1.5 text-slate-400 font-medium text-xs mt-1">
+                  <div className="flex flex-wrap items-center gap-x-1.5 text-slate-400 font-medium text-xs mt-1">
                     <span>Active window: </span>
                     <span className="text-slate-700 font-bold">{timeframe}</span>
                   </div>
@@ -166,15 +169,15 @@ export default function DepartmentReportsPage() {
               </div>
 
               {/* Card 2: Submission Count */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4 min-w-0">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Submissions</span>
-                  <div className="p-2.5 rounded-xl bg-indigo-50 text-[#5D5CFF] border border-indigo-100/50">
+                  <div className="p-2.5 rounded-xl bg-indigo-50 text-[#5D5CFF] border border-indigo-100/50 shrink-0">
                     <BarChart3 className="h-4 w-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{totalSubmissions} Requests</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">{totalSubmissions} Requests</h3>
                   <p className="text-xs font-medium text-slate-400 mt-1.5">
                     <span className="text-emerald-600 font-bold">{approvedRequests.length} Approved</span> · {pendingCount} Pending · {rejectedCount} Rejected
                   </p>
@@ -182,15 +185,15 @@ export default function DepartmentReportsPage() {
               </div>
 
               {/* Card 3: Velocity Speed */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4">
-                <div className="flex items-center justify-between">
+              <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4 min-w-0 sm:col-span-2 lg:col-span-1">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg. Turnaround Velocity</span>
-                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-100/50">
+                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-100/50 shrink-0">
                     <Clock className="h-4 w-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                     {requests.length > 0 ? '2.4 Days' : '0 Days'}
                   </h3>
                   <p className="text-xs font-medium text-slate-400 mt-1.5">
@@ -202,10 +205,10 @@ export default function DepartmentReportsPage() {
             </div>
 
             {/* 4. Two Column Dashboard Visual Analytics Block */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               
               {/* Left Column Box: Funding Category Metrics */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-xs lg:col-span-2 space-y-6">
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-6 shadow-xs lg:col-span-2 space-y-6 min-w-0">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 tracking-tight">Donation Distribution Share</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Top financial gift classifications recorded during {timeframe.toLowerCase()}</p>
@@ -216,9 +219,9 @@ export default function DepartmentReportsPage() {
                   {fundingSources.length > 0 ? (
                     fundingSources.map((source, index) => (
                       <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between text-xs font-bold">
-                          <span className="text-slate-700">{source.name}</span>
-                          <div className="space-x-2">
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs font-bold">
+                          <span className="text-slate-700 min-w-0 break-words">{source.name}</span>
+                          <div className="space-x-2 shrink-0">
                             <span className="text-slate-400 font-medium">{source.value}</span>
                             <span className="text-[#5D5CFF]">{source.percentage}%</span>
                           </div>
@@ -240,7 +243,7 @@ export default function DepartmentReportsPage() {
               </div>
 
               {/* Right Column Box: Workflow Speed Breakdown */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-xs flex flex-col justify-between space-y-6">
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col justify-between space-y-6 min-w-0">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 tracking-tight">Workflow Bottleneck Audit</h3>
                   <p className="text-xs text-slate-400 mt-0.5">Average delay intervals measured per council group layer</p>
@@ -253,9 +256,9 @@ export default function DepartmentReportsPage() {
                     { stage: 'Senate Division', time: '0.8 Days', color: 'border-l-indigo-500' },
                     { stage: 'Executive Council', time: '1.4 Days', color: 'border-l-slate-400' },
                   ].map((item, idx) => (
-                    <div key={idx} className={`flex items-center justify-between p-2.5 bg-slate-50 border-l-4 rounded-r-xl text-xs font-bold text-slate-700 ${item.color}`}>
-                      <span className="font-semibold text-slate-500">{item.stage}</span>
-                      <span>{item.time}</span>
+                    <div key={idx} className={`flex items-center justify-between gap-3 p-2.5 bg-slate-50 border-l-4 rounded-r-xl text-xs font-bold text-slate-700 ${item.color}`}>
+                      <span className="font-semibold text-slate-500 min-w-0">{item.stage}</span>
+                      <span className="shrink-0 whitespace-nowrap">{item.time}</span>
                     </div>
                   ))}
                 </div>
