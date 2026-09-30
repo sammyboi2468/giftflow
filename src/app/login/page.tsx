@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Loader2,
   AlertCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 function LoginPageContent() {
@@ -60,7 +61,7 @@ function LoginPageContent() {
         const session = await getSession();
         const userRole = session?.user?.role;
 
-        // If a explicit callback URL was provided, use it; otherwise route by role
+        // If an explicit callback URL was provided, use it; otherwise route by role
         const destination = callbackUrl || getRoleBasedRedirectPath(userRole);
 
         router.push(destination);
@@ -148,6 +149,21 @@ function LoginPageContent() {
               <Gift className="h-5 w-5" />
             </div>
             <span className="text-lg font-bold text-gray-900">GiftFlow</span>
+          </div>
+
+          {/* ATTENTION: Very Important Mobile Alert Message in Bold Red */}
+          <div className="login-anim rounded-xl border-2 border-red-500 bg-red-50 p-4 shadow-sm" style={{ animationDelay: '30ms' }}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-6 w-6 text-red-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-extrabold text-red-700 tracking-wide uppercase">
+                  ATTENTION MOBILE USERS:
+                </p>
+                <p className="text-xs font-bold text-red-600 leading-relaxed">
+                  If you are using a mobile phone, please switch your browser to <span className="underline decoration-red-500 decoration-2">Desktop View / Desktop Site</span> or use a computer to log in for full functionality.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="login-anim space-y-1" style={{ animationDelay: '60ms' }}>
