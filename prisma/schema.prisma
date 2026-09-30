@@ -43,6 +43,10 @@ model User {
   faculty                String?
   office                 String?
   giftRequests           GiftRequest[]
+  defaultOriginLevel     String?
+  defaultFaculty         String?
+  defaultLedgerCode      String?
+  notifyRoutineUpdates   Boolean       @default(true)
   comments               Comment[]
   activityLogs           ActivityLog[]
   mustChangePassword     Boolean       @default(true)

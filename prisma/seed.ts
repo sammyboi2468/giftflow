@@ -36,6 +36,14 @@ async function main() {
   });
 
   await upsertUser({
+  name: "Science Department",
+  email: "science@yourdomain.com",
+  tempPassword: "ChangeMe123!",
+  role: Role.DEPARTMENT_USER,
+  department: "Science",
+});
+
+  await upsertUser({
     name: "Advancement Office",
     email: "advancement@yourdomain.com",
     tempPassword: "ChangeMe123!",

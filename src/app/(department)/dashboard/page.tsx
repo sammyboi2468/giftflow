@@ -4,18 +4,19 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Role, RequestStatus } from '@prisma/client';
-import { 
-  Gift, 
-  PlusCircle, 
-  Clock, 
-  CheckCircle, 
-  Send, 
+import {
+  Gift,
+  PlusCircle,
+  Clock,
+  CheckCircle,
+  Send,
   ChevronRight,
   FileText,
   AlertCircle,
   AlertTriangle,
   Edit3,
-  Paperclip
+  Paperclip,
+  MessageSquareText,
 } from 'lucide-react';
 import { ShieldCheck } from 'lucide-react';
 
@@ -31,6 +32,13 @@ const statusMap: Record<RequestStatus, { step: number; location: string }> = {
   AWAITING_DEPARTMENT_RESPONSE: { step: 1, location: "Awaiting Dept Response" },
   APPROVED: { step: 5, location: "Approved & Completed" },
   REJECTED: { step: 0, location: "Closed / Rejected" },
+};
+
+const ROLE_LABEL: Partial<Record<Role, string>> = {
+  [Role.ADVANCEMENT_OFFICE]: 'Advancement Office',
+  [Role.SENATE_DIVISION]: 'Senate Division',
+  [Role.COUNCIL]: 'Council',
+  [Role.ADMIN]: 'Administrator',
 };
 
 function formatSubmittedDate(date: Date) {
@@ -50,6 +58,12 @@ function formatTimeAgo(date: Date) {
   interval = Math.floor(seconds / 60);
   if (interval >= 1) return `${interval}m ago`;
   return 'just now';
+}
+
+// The review action stores an auto-generated audit line when the reviewer
+// leaves the comment box empty. That isn't real feedback, so we ignore it.
+function isRealReviewerNote(content?: string | null) {
+  return !!content && !content.startsWith('Status updated to');
 }
 
 export default async function DashboardPage() {
@@ -92,19 +106,19 @@ export default async function DashboardPage() {
 
   // Dynamic Metric Counts with Department Scope
   const [inProgressCount, approvedCount, totalCount, needsInfoCount] = await Promise.all([
-    db.giftRequest.count({ 
-      where: { ...departmentWhereClause, status: RequestStatus.PENDING } 
+    db.giftRequest.count({
+      where: { ...departmentWhereClause, status: RequestStatus.PENDING }
     }),
-    db.giftRequest.count({ 
-      where: { ...departmentWhereClause, status: RequestStatus.APPROVED } 
+    db.giftRequest.count({
+      where: { ...departmentWhereClause, status: RequestStatus.APPROVED }
     }),
-    db.giftRequest.count({ 
-      where: isReviewingBody 
-        ? { NOT: { status: RequestStatus.DRAFT } } 
-        : { ...departmentWhereClause } 
+    db.giftRequest.count({
+      where: isReviewingBody
+        ? { NOT: { status: RequestStatus.DRAFT } }
+        : { ...departmentWhereClause }
     }),
-    db.giftRequest.count({ 
-      where: { ...departmentWhereClause, status: RequestStatus.REVISION_REQUESTED } 
+    db.giftRequest.count({
+      where: { ...departmentWhereClause, status: RequestStatus.REVISION_REQUESTED }
     }),
   ]);
 
@@ -146,11 +160,38 @@ export default async function DashboardPage() {
     (req) => req.status === RequestStatus.AWAITING_DEPARTMENT_RESPONSE && req.userId === currentUserId
   );
 
+  // Latest reviewer comment for each request sent back for revision.
+  // authorId != currentUserId excludes the owner's own comments, so we only
+  // pick up what a reviewer wrote. Newest first, so the first entry we see
+  // per request is the most recent note.
+  const revisionIds = revisionRequests.map((r) => r.id);
+
+  const revisionComments = revisionIds.length
+    ? await db.comment.findMany({
+        where: {
+          giftRequestId: { in: revisionIds },
+          authorId: { not: currentUserId },
+        },
+        orderBy: { createdAt: 'desc' },
+        include: { author: { select: { name: true, role: true } } },
+      })
+    : [];
+
+  const latestCommentByRequest = new Map<string, (typeof revisionComments)[number]>();
+  for (const c of revisionComments) {
+    // Skip auto-generated audit lines so an older real note isn't hidden
+    // behind a "Status updated to ..." entry.
+    if (!isRealReviewerNote(c.content)) continue;
+    if (!latestCommentByRequest.has(c.giftRequestId)) {
+      latestCommentByRequest.set(c.giftRequestId, c);
+    }
+  }
+
   // Fetch Recent Activity Logs
   const activitiesFromDb = await db.activityLog.findMany({
-    where: isReviewingBody 
-      ? {} 
-      : userDepartment 
+    where: isReviewingBody
+      ? {}
+      : userDepartment
       ? { user: { department: userDepartment } }
       : { userId: currentUserId },
     orderBy: { createdAt: 'desc' },
@@ -166,20 +207,20 @@ export default async function DashboardPage() {
       <div className="relative w-full overflow-hidden rounded-2xl bg-[#5D5CFF] p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-sm">
         <div className="z-10 space-y-2">
           <div className="inline-block px-3 py-1 bg-white/10 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm">
-            Logged in as: {currentUser?.name || session.user.name || 'Authorized Session'} 
+            Logged in as: {currentUser?.name || session.user.name || 'Authorized Session'}
             {userDepartment ? ` (${userDepartment})` : ''}
           </div>
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
             Giftflow Governance Workspace
           </h2>
           <p className="text-sm text-white/80 max-w-xl font-medium">
-            {isReviewingBody 
+            {isReviewingBody
               ? `System-wide metrics: ${inProgressCount} new files pending review, and ${needsInfoCount} flagged for clarification items.`
               : `Your department (${userDepartment || 'Default'}) has ${inProgressCount} active proposals pending and ${needsInfoCount} requiring attention.`
             }
           </p>
         </div>
-        
+
         {canSubmit && (
           <Link href="/requestform">
             <button className="z-10 mt-6 md:mt-0 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#5D5CFF] shadow-sm hover:bg-slate-50 transition-all transform active:scale-95 shrink-0">
@@ -206,32 +247,59 @@ export default async function DashboardPage() {
                 Action Required: {revisionRequests.length} Request(s) Sent Back for Revision
               </h3>
               <p className="text-xs text-amber-700 mt-0.5">
-                The Advancement Office has requested revisions before review can proceed.
+                A reviewer has requested changes before review can proceed. Their feedback is shown below.
               </p>
             </div>
           </div>
 
           <div className="grid gap-2 pt-1">
-            {revisionRequests.map((request) => (
-              <div
-                key={request.id}
-                className="flex items-center justify-between rounded-xl bg-white p-3 border border-amber-100 shadow-xs"
-              >
-                <div className="space-y-0.5">
-                  <p className="text-sm font-bold text-slate-800">{request.title}</p>
-                  <p className="text-xs text-slate-400 font-medium">
-                    ID: {request.id} · Updated {formatTimeAgo(request.updatedAt)}
-                  </p>
-                </div>
-                <Link
-                  href={`/requestform?draftId=${request.id}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-xs"
+            {revisionRequests.map((request) => {
+              const note = latestCommentByRequest.get(request.id);
+              const reviewerName = note?.author?.name;
+              const reviewerRole = note?.author?.role ? ROLE_LABEL[note.author.role] : undefined;
+
+              return (
+                <div
+                  key={request.id}
+                  className="rounded-xl bg-white p-3 border border-amber-100 shadow-xs space-y-3"
                 >
-                  <Edit3 className="h-3.5 w-3.5" />
-                  Revise Proposal
-                </Link>
-              </div>
-            ))}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-bold text-slate-800">{request.title}</p>
+                      <p className="text-xs text-slate-400 font-medium">
+                        ID: {request.id} · Updated {formatTimeAgo(request.updatedAt)}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/requestform?draftId=${request.id}`}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors shadow-xs"
+                    >
+                      <Edit3 className="h-3.5 w-3.5" />
+                      Revise Proposal
+                    </Link>
+                  </div>
+
+                  <div className="rounded-lg border border-amber-100 bg-amber-50/60 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                      <MessageSquareText className="h-3.5 w-3.5" />
+                      <span>
+                        Reviewer feedback
+                        {reviewerRole ? ` from ${reviewerRole}` : ''}
+                        {reviewerName ? ` (${reviewerName})` : ''}
+                      </span>
+                      {note && (
+                        <span className="ml-auto font-medium text-amber-600">
+                          {formatTimeAgo(note.createdAt)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                      {note ? note.content : 'The reviewer did not leave a comment.'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -303,7 +371,7 @@ export default async function DashboardPage() {
 
       {/* Workspace Splitting Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* LEFT COLUMN: Track Active Pipeline List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -321,7 +389,7 @@ export default async function DashboardPage() {
 
           {activeRequestsFromDb.map((request) => {
             const mappedStage = statusMap[request.status] || { step: 2, location: "Processing Submissions" };
-            
+
             const formattedValue = new Intl.NumberFormat('en-US', {
               style: 'currency',
               currency: 'USD',
@@ -330,6 +398,9 @@ export default async function DashboardPage() {
 
             const isRevision = request.status === RequestStatus.REVISION_REQUESTED;
             const isAwaitingResponse = request.status === RequestStatus.AWAITING_DEPARTMENT_RESPONSE;
+            const revisionNote = isRevision && request.userId === currentUserId
+              ? latestCommentByRequest.get(request.id)
+              : undefined;
 
             return (
               <div key={request.id} className="block bg-white p-5 rounded-2xl border border-slate-100 space-y-4 shadow-sm group transition-all">
@@ -345,7 +416,7 @@ export default async function DashboardPage() {
                       )}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
                       request.status === RequestStatus.APPROVED ? 'text-emerald-600 bg-emerald-50' :
@@ -354,7 +425,7 @@ export default async function DashboardPage() {
                       request.status === RequestStatus.REJECTED ? 'text-red-600 bg-red-50' :
                       'text-indigo-600 bg-indigo-50'
                     }`}>
-                      {request.status.replace('_', ' ')}
+                      {request.status.replace(/_/g, ' ')}
                     </span>
 
                     {/* ACTION BUTTON IF REVISION IS NEEDED -- only on requests the viewer actually submitted */}
@@ -387,14 +458,14 @@ export default async function DashboardPage() {
                     {[1, 2, 3, 4, 5].map((step) => (
                       <React.Fragment key={step}>
                         <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${
-                          step <= mappedStage.step 
-                            ? request.status === RequestStatus.REJECTED ? 'bg-rose-500' : 'bg-[#5D5CFF]' 
+                          step <= mappedStage.step
+                            ? request.status === RequestStatus.REJECTED ? 'bg-rose-500' : 'bg-[#5D5CFF]'
                             : 'bg-slate-100'
                         }`} />
                         {step < 5 && (
                           <div className={`h-0.5 w-full rounded ${
-                            step < mappedStage.step 
-                              ? request.status === RequestStatus.REJECTED ? 'bg-rose-300' : 'bg-[#5D5CFF]' 
+                            step < mappedStage.step
+                              ? request.status === RequestStatus.REJECTED ? 'bg-rose-300' : 'bg-[#5D5CFF]'
                               : 'bg-slate-100'
                           }`} />
                         )}
@@ -405,6 +476,14 @@ export default async function DashboardPage() {
                     Current Location: <span className="text-slate-700 font-semibold">{mappedStage.location}</span>
                   </p>
                 </div>
+
+                {/* Reviewer note on requests sent back for revision */}
+                {revisionNote && (
+                  <p className="whitespace-pre-wrap rounded-lg bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-800">
+                    <span className="font-bold">Reviewer note: </span>
+                    {revisionNote.content}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -412,7 +491,7 @@ export default async function DashboardPage() {
 
         {/* RIGHT COLUMN: Action Desk & Audit Feed */}
         <div className="space-y-6">
-          
+
           <div className="space-y-3">
             <h3 className="text-base font-bold text-slate-800 tracking-tight">Quick Actions</h3>
             <div className="bg-white rounded-2xl border border-slate-100 p-3 space-y-1 shadow-sm">

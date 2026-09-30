@@ -21,16 +21,11 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <Link 
               href="/login" 
-              className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              className="inline-flex items-center justify-center rounded-xl bg-[#5D5CFF] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4c4be6] transition-all"
             >
               Sign In
             </Link>
-            <Link 
-              href="/auth?request=true" 
-              className="inline-flex items-center justify-center rounded-xl bg-[#5D5CFF] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4c4be6] transition-all"
-            >
-              Get Started
-            </Link>
+            
           </div>
         </div>
       </header>

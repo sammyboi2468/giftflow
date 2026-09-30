@@ -22,6 +22,21 @@ const STAGE_ROLE_MAP: Record<string, Role> = {
   council: Role.COUNCIL,
 };
 
+// Describes why an item in the queue is NOT a fresh submission.
+export type ReturnInfo = {
+  // RESUBMITTED: sent back for revision earlier, and the department has
+  //   fixed it and sent it in again.
+  // DEPARTMENT_RESPONSE: Senate issued a Decision Extract and the department
+  //   has responded, so it's back in Senate processing.
+  kind: "RESUBMITTED" | "DEPARTMENT_RESPONSE";
+  // How many times a reviewer has sent this request back for revision.
+  revisionCount: number;
+  // The most recent revision note the reviewer wrote (may be null).
+  lastRevisionNote: string | null;
+  // When the request was last sent back for revision (null if never).
+  lastRevisionAt: Date | null;
+};
+
 export default async function ReviewerStagePage({
   params,
 }: {
@@ -60,13 +75,65 @@ export default async function ReviewerStagePage({
       : targetStatus;
 
   // Fetch applications pending for this specific stage
-  const applications = await db.giftRequest.findMany({
+  const applicationsRaw = await db.giftRequest.findMany({
     where: { status: statusFilter },
     include: {
       user: { select: { name: true, department: true } },
     },
     orderBy: { createdAt: "desc" },
   });
+
+  // Work out which items are coming back rather than arriving fresh.
+  // A request that has ever been sent back for revision has a StageHistory
+  // row whose resultingStatus is REVISION_REQUESTED; that row is permanent,
+  // so it survives the request moving on through later stages.
+  const ids = applicationsRaw.map((a) => a.id);
+
+  const revisionHistory = ids.length
+    ? await db.stageHistory.findMany({
+        where: {
+          giftRequestId: { in: ids },
+          resultingStatus: RequestStatus.REVISION_REQUESTED,
+        },
+        orderBy: { createdAt: "desc" }, // newest first
+        select: { giftRequestId: true, notes: true, createdAt: true },
+      })
+    : [];
+
+  const revisionsByRequest = new Map<string, typeof revisionHistory>();
+  for (const row of revisionHistory) {
+    const list = revisionsByRequest.get(row.giftRequestId) ?? [];
+    list.push(row);
+    revisionsByRequest.set(row.giftRequestId, list);
+  }
+
+  const applications = applicationsRaw.map((app) => {
+    const revisions = revisionsByRequest.get(app.id) ?? [];
+    const latest = revisions[0];
+
+    let returnInfo: ReturnInfo | null = null;
+
+    if (app.status === RequestStatus.SENATE_PROCESSING) {
+      // Only reachable after the department answered a Decision Extract.
+      returnInfo = {
+        kind: "DEPARTMENT_RESPONSE",
+        revisionCount: revisions.length,
+        lastRevisionNote: latest?.notes ?? null,
+        lastRevisionAt: latest?.createdAt ?? null,
+      };
+    } else if (revisions.length > 0) {
+      returnInfo = {
+        kind: "RESUBMITTED",
+        revisionCount: revisions.length,
+        lastRevisionNote: latest.notes ?? null,
+        lastRevisionAt: latest.createdAt,
+      };
+    }
+
+    return { ...app, returnInfo };
+  });
+
+  const returnedCount = applications.filter((a) => a.returnInfo).length;
 
   const isSenate = normalizedStage === "senate" || normalizedStage === "senate-processing";
   const isCouncil = normalizedStage === "council";
@@ -113,6 +180,12 @@ export default async function ReviewerStagePage({
                 <span className="text-3xl font-extrabold text-white">{applications.length}</span>
                 <p className="text-xs font-medium text-indigo-100">Applications pending</p>
               </div>
+              {returnedCount > 0 && (
+                <div>
+                  <span className="text-3xl font-extrabold text-amber-200">{returnedCount}</span>
+                  <p className="text-xs font-medium text-indigo-100">Returned to you</p>
+                </div>
+              )}
               <OldestPendingStat oldestCreatedAt={oldestCreatedAt} />
             </div>
           </div>

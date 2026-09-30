@@ -116,11 +116,14 @@ export async function processApplicationReview({
       // Every other transition (forward progress, rejection, revision
       // request) that isn't already covered by a specific notifier above.
       await notifyStatusChange({
-        requestId: applicationId,
-        title: application.title ?? "Untitled application",
-        applicantUserId: application.userId,
-        newStatus: targetStatus,
-      });
+  requestId: applicationId,
+  title: application.title ?? "Untitled application",
+  applicantUserId: application.userId,
+  newStatus: targetStatus,
+  fromStatus: application.status,
+  actorId: session.user.id,
+  comment,
+});
     }
 
     if (targetStatus === RequestStatus.APPROVED) {
