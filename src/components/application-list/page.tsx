@@ -2,14 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, FileText, CheckCircle2, Search, ArrowUpDown, Clock, MessageSquareText } from 'lucide-react';
-import { RequestStatus } from '@prisma/client';
+import { ChevronRight, FileText, CheckCircle2, Search, ArrowUpDown } from 'lucide-react';
 
 export interface ReviewerApplication {
   id: string;
   title: string | null;
-  status: RequestStatus;
-  departmentResponse?: string | null;
+  status: string;
   createdAt: Date;
   user: {
     name: string | null;
@@ -37,6 +35,8 @@ function daysPending(createdAt: Date, now: number): number {
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
 
+// Named export (not a separate file/default export) so the hero's "days on
+// oldest item" stat shares the exact same working module as ApplicationsList.
 export function OldestPendingStat({ oldestCreatedAt }: { oldestCreatedAt: Date | null }) {
   const [now] = useState(() => Date.now());
 
@@ -53,46 +53,36 @@ export function OldestPendingStat({ oldestCreatedAt }: { oldestCreatedAt: Date |
 export default function ApplicationsList({ applications, stage, isSenate, isCouncil }: ApplicationsListProps) {
   const [query, setQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
-  const [activeTab, setActiveTab] = useState<'ALL' | 'INITIAL' | 'PROCESSING'>('ALL');
+  // Captured once, on mount, via the lazy initializer -- not read directly
+  // during render -- so "now" stays stable across re-renders instead of
+  // drifting on every keystroke in the search box.
   const [now] = useState(() => Date.now());
 
-  // Filter & Sort Applications
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-
-    const filtered = applications.filter((app) => {
-      // 1. Filter by Tab (for Senate)
-      if (isSenate) {
-        if (activeTab === 'INITIAL' && app.status !== RequestStatus.SENATE_REVIEW) return false;
-        if (activeTab === 'PROCESSING' && app.status !== RequestStatus.SENATE_PROCESSING) return false;
-      }
-
-      // 2. Filter by Search Query
-      if (!q) return true;
-      return (
-        (app.title ?? '').toLowerCase().includes(q) ||
-        (app.user.name ?? '').toLowerCase().includes(q) ||
-        (app.user.department ?? '').toLowerCase().includes(q)
-      );
-    });
+    const filtered = q
+      ? applications.filter((app) => {
+          return (
+            (app.title ?? '').toLowerCase().includes(q) ||
+            (app.user.name ?? '').toLowerCase().includes(q) ||
+            (app.user.department ?? '').toLowerCase().includes(q)
+          );
+        })
+      : applications;
 
     return [...filtered].sort((a, b) => {
       const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
       return sortOrder === 'newest' ? -diff : diff;
     });
-  }, [applications, query, sortOrder, activeTab, isSenate]);
-
-  const senateReviewCount = applications.filter((a) => a.status === RequestStatus.SENATE_REVIEW).length;
-  const senateProcessingCount = applications.filter((a) => a.status === RequestStatus.SENATE_PROCESSING).length;
+  }, [applications, query, sortOrder]);
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      {/* Header & Controls */}
-      <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-base font-bold text-slate-900">Applications Awaiting Action</h2>
 
         {applications.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
@@ -115,41 +105,6 @@ export default function ApplicationsList({ applications, stage, isSenate, isCoun
         )}
       </div>
 
-      {/* Senate Filter Tabs */}
-      {isSenate && applications.length > 0 && (
-        <div className="mt-4 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <button
-            type="button"
-            onClick={() => setActiveTab('ALL')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              activeTab === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            All Requests ({applications.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('INITIAL')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              activeTab === 'INITIAL' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            Senate Review ({senateReviewCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('PROCESSING')}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              activeTab === 'PROCESSING' ? 'bg-amber-600 text-white' : 'text-amber-800 bg-amber-50 hover:bg-amber-100'
-            }`}
-          >
-            <MessageSquareText className="h-3.5 w-3.5" />
-            Department Responded ({senateProcessingCount})
-          </button>
-        </div>
-      )}
-
-      {/* Applications List View */}
       <div className="mt-4">
         {applications.length === 0 ? (
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-12 text-center">
@@ -169,44 +124,26 @@ export default function ApplicationsList({ applications, stage, isSenate, isCoun
               const pending = daysPending(app.createdAt, now);
               const isOverdue = pending >= 7;
               const isWaiting = pending >= 3 && pending < 7;
-              const isProcessing = app.status === RequestStatus.SENATE_PROCESSING;
 
               return (
                 <Link
                   key={app.id}
-                  href={`/reviewer/${stage}/${app.id}`}
-                  className={`group flex flex-col gap-4 rounded-xl p-4 transition-all sm:flex-row sm:items-center sm:justify-between ${
-                    isProcessing
-                      ? 'bg-amber-50/40 border border-amber-200/60 hover:bg-amber-50/80 my-1'
-                      : 'hover:bg-slate-50/80'
-                  }`}
+                  href={`/reviewer/${app.status === 'SENATE_PROCESSING' ? 'senate-processing' : stage}/${app.id}`}
+                  className="group flex flex-col gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50/80 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-start gap-3">
-                    <div
-                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                        isProcessing ? 'bg-amber-100 text-amber-800' : 'bg-indigo-50 text-indigo-700'
-                      }`}
-                    >
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700">
                       {initials(app.user.name)}
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        {/* Senate Processing Highlight Tag */}
-                        {isProcessing && (
-                          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-900">
-                            <Clock className="h-3 w-3 text-amber-700" />
-                            <span>Department Responded</span>
-                          </div>
-                        )}
-
-                        {(isSenate || isCouncil) && !isProcessing && (
+                        {(isSenate || isCouncil) && (
                           <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">
                             <CheckCircle2 className="h-3 w-3 text-emerald-600" />
                             <span>{isCouncil ? 'Recommended by Senate Division' : 'Recommended by Advancement Office'}</span>
                           </div>
                         )}
-
                         {isOverdue && (
                           <div className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-medium text-rose-700">
                             Waiting {pending} days
@@ -229,8 +166,7 @@ export default function ApplicationsList({ applications, stage, isSenate, isCoun
                         </span>
                         <span>Department: {app.user.department || 'N/A'}</span>
                         <span>
-                          Submitted:{' '}
-                          {new Date(app.createdAt).toLocaleDateString('en-US', {
+                          Submitted: {new Date(app.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',

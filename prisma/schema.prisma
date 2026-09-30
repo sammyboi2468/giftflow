@@ -65,6 +65,7 @@ model GiftRequest {
   user                  User          @relation(fields: [userId], references: [id])
   title                 String?
   donorName             String? // Ensure this exact field exists
+  donorEmail            String?
   decisionExtractUrl    String?
   appreciationLetterUrl String?
   departmentResponse    String?         @db.Text

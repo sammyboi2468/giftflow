@@ -29,12 +29,18 @@ interface ReviewActionFormProps {
   applicationId: string;
   nextStatus: RequestStatus;
   documents?: ReviewDocument[];
+  // The stage this request is ACTUALLY at, derived server-side from its
+  // status. Takes priority over the URL segment, so e.g. a request already
+  // responded to by the department is treated as "senate-processing" even
+  // if it was opened from /reviewer/senate/...
+  effectiveStage?: string;
 }
 
 export default function ReviewActionForm({
   applicationId,
   nextStatus,
   documents = [],
+  effectiveStage,
 }: ReviewActionFormProps) {
   const router = useRouter();
   const params = useParams();
@@ -48,7 +54,8 @@ export default function ReviewActionForm({
   const [error, setError] = useState<string | null>(null);
   const [viewedDocIds, setViewedDocIds] = useState<Set<string>>(new Set());
 
-  const stage = (params?.stage as string)?.toLowerCase() || "";
+  const urlStage = (params?.stage as string)?.toLowerCase() || "";
+  const stage = (effectiveStage || urlStage).toLowerCase();
   // "senate" is the initial review, before an extract has ever been issued.
   // "senate-processing" is AFTER the department has responded to that
   // extract -- only from there is forwarding to Council allowed.
@@ -212,7 +219,7 @@ export default function ReviewActionForm({
       toast.success("Review Submitted", { description: toastMessage });
 
       router.refresh();
-      router.push(stage ? `/reviewer/${stage}` : "/dashboard");
+      router.push(urlStage ? `/reviewer/${urlStage}` : "/dashboard");
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "An unexpected error occurred.";

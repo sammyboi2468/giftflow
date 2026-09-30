@@ -4,7 +4,8 @@ import { db } from "@/lib/db";
 import { RequestStatus, Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { notifyDecisionExtractIssued, notifyFinalApproval, notifyStatusChange } from "@/lib/notify";
-import { generateAppreciationLetter } from "@/lib/generateAppreciationLetter";
+import { generateAppreciationLetter} from "@/lib/generateAppreciationLetter";
+import { sendAppreciationLetterEmail } from "@/lib/send-email";
 
 interface ProcessReviewInput {
   applicationId: string;
@@ -141,6 +142,15 @@ export async function processApplicationReview({
         where: { id: applicationId },
         data: { appreciationLetterUrl: letterUrl },
       });
+
+      if (application.donorEmail) {
+        await sendAppreciationLetterEmail({
+          donorEmail: application.donorEmail,
+          donorName: application.donorName || "Valued Donor",
+          title: application.title ?? "your generous gift",
+          letterUrl,
+        });
+      }
 
       await notifyFinalApproval({
         requestId: applicationId,

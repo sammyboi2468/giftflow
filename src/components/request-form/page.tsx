@@ -79,6 +79,7 @@ interface GiftRequestData {
   id: string;
   title?: string | null;
   donorName?: string | null;
+  donorEmail?: string | null;
   giftType?: string | null;
   department?: string | null;
   amount?: number | string | null;
@@ -159,6 +160,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
   const [formData, setFormData] = useState({
     title: '',
     donorName: '',
+    donorEmail: '',
     giftType: 'Prize',
     department: '',
     amount: '',
@@ -204,6 +206,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
           setFormData({
             title: data.title || '',
             donorName: data.donorName || '',
+            donorEmail: data.donorEmail || '',
             giftType: data.giftType || 'Prize',
             department: data.department || '',
             amount: data.amount ? String(data.amount) : '',
@@ -519,6 +522,20 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Donor Email</label>
+                  <input
+                    type="email"
+                    name="donorEmail"
+                    value={formData.donorEmail}
+                    onChange={handleChange}
+                    placeholder="e.g., contact@acmefoundation.org"
+                    className="mt-1.5 w-full rounded-lg border border-gray-200 p-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">
+                    Used to send the appreciation letter once approved. Optional for now.
+                  </p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Gift Type</label>
                   <select
                     name="giftType"
@@ -706,6 +723,7 @@ export default function FormContent({ initialDraftId }: FormContentProps) {
                   <p>
                     <span className="font-semibold text-gray-700">Donor:</span>{' '}
                     <span>{formData.donorName || 'N/A'}</span>
+                    {formData.donorEmail && <span className="text-gray-400"> ({formData.donorEmail})</span>}
                   </p>
                   <p>
                     <span className="font-semibold text-gray-700">Department / Source:</span>{' '}

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { notFound, redirect } from "next/navigation";
-import { RequestStatus } from "@prisma/client";
+import { RequestStatus, Role } from "@prisma/client";
 import ReviewActionForm from "@/components/reviewer/ReviewActionForm";
 import Link from "next/link";
 import {
@@ -30,6 +30,14 @@ const STAGE_NEXT_STATUS_MAP: Record<string, RequestStatus> = {
   council: RequestStatus.APPROVED,
 };
 
+// Who may act at each stage (Admin can act at any).
+const STAGE_ROLE_MAP: Record<string, Role> = {
+  advancement: Role.ADVANCEMENT_OFFICE,
+  senate: Role.SENATE_DIVISION,
+  "senate-processing": Role.SENATE_DIVISION,
+  council: Role.COUNCIL,
+};
+
 export default async function ApplicationDetailPage({
   params,
 }: {
@@ -41,9 +49,11 @@ export default async function ApplicationDetailPage({
   if (!session?.user) redirect("/login");
 
   const normalizedStage = stage.toLowerCase();
-  const nextStatus = STAGE_NEXT_STATUS_MAP[normalizedStage];
+  if (!STAGE_NEXT_STATUS_MAP[normalizedStage]) notFound();
 
-  if (!nextStatus) notFound();
+  const userRole = session.user.role as Role | undefined;
+  if (!userRole || userRole === Role.DEPARTMENT_USER) redirect("/login");
+  if (userRole !== Role.ADMIN && userRole !== STAGE_ROLE_MAP[normalizedStage]) redirect("/login");
 
   // Fetch the specific request by ID including related documents
   const application = await db.giftRequest.findUnique({
@@ -65,6 +75,16 @@ export default async function ApplicationDetailPage({
   });
 
   if (!application) notFound();
+
+  // The URL says which queue the reviewer came from, but what they can DO
+  // depends on where the request really is. A request the department has
+  // already responded to is SENATE_PROCESSING -- Senate must forward it to
+  // Council, not be asked for another decision extract.
+  const effectiveStage =
+    normalizedStage === "senate" && application.status === RequestStatus.SENATE_PROCESSING
+      ? "senate-processing"
+      : normalizedStage;
+  const nextStatus = STAGE_NEXT_STATUS_MAP[effectiveStage];
 
   const formattedAmount =
     application.amount !== null && application.amount !== undefined
@@ -273,6 +293,7 @@ export default async function ApplicationDetailPage({
         <ReviewActionForm
           applicationId={application.id}
           nextStatus={nextStatus}
+          effectiveStage={effectiveStage}
           documents={application.documents}
         />
       </div>

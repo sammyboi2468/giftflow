@@ -38,6 +38,7 @@ export async function createGiftRequest(formData: FormData) {
 
     const title = formData.get('title') as string;
     const donorName = formData.get('donorName') as string;
+     const donorEmail = (formData.get('donorEmail') as string) || null;
     const department = formData.get('department') as string;
     const purpose = formData.get('purpose') as string;
     const giftType = formData.get('giftType') as string;
@@ -63,6 +64,7 @@ export async function createGiftRequest(formData: FormData) {
     const payload = {
       title,
       donorName,
+      donorEmail,
       department,
       purpose,
       giftType,
@@ -128,6 +130,7 @@ export async function saveGiftRequestDraft(formData: FormData) {
 
     const title = (formData.get('title') as string) || 'Untitled Draft';
     const donorName = (formData.get('donorName') as string) || '';
+     const donorEmail = (formData.get('donorEmail') as string) || null;
     const giftType = (formData.get('giftType') as string) || 'Prize';
     const department = (formData.get('department') as string) || '';
     const purpose = (formData.get('purpose') as string) || '';
@@ -151,6 +154,7 @@ export async function saveGiftRequestDraft(formData: FormData) {
         data: {
           title,
           donorName,
+          donorEmail,
           giftType,
           department,
           amount,
@@ -165,6 +169,7 @@ export async function saveGiftRequestDraft(formData: FormData) {
         data: {
           title,
           donorName,
+          donorEmail,
           giftType,
           department,
           amount,

@@ -28,13 +28,6 @@ function LoginPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /**
-   * Department User, Advancement Office, and Admin can all submit
-   * requests, so the dashboard (with its submit button, revision/response
-   * banners, etc.) is genuinely useful as their home. Senate and Council
-   * can never submit -- for them the dashboard has nothing to offer beyond
-   * a link to their queue, so they go straight there instead.
-   */
   const getRoleBasedRedirectPath = (role?: string) => {
     switch (role?.toUpperCase()) {
       case 'SENATE':
